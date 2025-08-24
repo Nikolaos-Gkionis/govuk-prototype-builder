@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full bg-white antialiased">
+      <body className="h-full bg-white antialiased" suppressHydrationWarning>
         <div className="min-h-full" suppressHydrationWarning>
           {/* Skip link for accessibility */}
           <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 bg-primary text-white px-4 py-2 z-50 rounded">
@@ -88,7 +88,7 @@ export default function RootLayout({
                 </div>
                 
                 <p className="text-sm text-muted">
-                  Made by <span className="font-medium">GOV.UK Design Team</span> · All rights reserved.
+                  Made by <span className="font-medium">PROTO DSGN Limited</span> · All rights reserved.
                 </p>
               </div>
             </div>

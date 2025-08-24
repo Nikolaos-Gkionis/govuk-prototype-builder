@@ -1,10 +1,10 @@
 export default function ProjectsPage() {
   return (
-    <div>
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-12">
         <div className="mb-4 sm:mb-0">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Your prototypes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Your prototypes</h1>
           <p className="text-lg text-gray-600">
             Manage all your government service prototypes in one place.
           </p>
