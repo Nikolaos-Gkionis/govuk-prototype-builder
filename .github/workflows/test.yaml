@@ -64,6 +64,12 @@ jobs:
           - description: JavaScript tests
             run: npx jest --color --maxWorkers=2
 
+          - description: Workspace builds
+            run: npm run workspace:build
+
+          - description: Workspace tests
+            run: npm run workspace:test
+
           - description: Check broken links
             run: npm run check-links
 

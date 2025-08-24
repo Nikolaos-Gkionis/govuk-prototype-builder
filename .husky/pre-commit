@@ -1,1 +1,10 @@
-npx --no lint-staged
+#!/bin/sh
+# Load mise environment (if available)
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise env -s sh)"
+fi
+
+# Ensure Node.js bin directory is in PATH
+export PATH="/Users/laptop/.local/share/mise/installs/node/24.6.0/bin:$PATH"
+
+npx --no-install lint-staged

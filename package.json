@@ -1,22 +1,33 @@
 {
-  "name": "govuk_design_system",
+  "name": "govuk_prototype_builder",
   "private": true,
-  "description": "GOV.UK Design System",
+  "description": "AI Wrapper for GOV.UK Design System → Point-and-Click Prototyper with Prototype Kit Export",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alphagov/govuk-design-system.git"
+    "url": "git+https://github.com/nikolaos-gkionis/govuk-prototype-builder.git"
   },
-  "author": "Government Digital Service developers",
+  "author": "Nikolaos Gkionis",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/alphagov/govuk-design-system/issues"
+    "url": "https://github.com/nikolaos-gkionis/govuk-prototype-builder/issues"
   },
-  "homepage": "https://github.com/alphagov/govuk-design-system#readme",
+  "homepage": "https://github.com/nikolaos-gkionis/govuk-prototype-builder#readme",
   "scripts": {
     "postinstall": "npm ls --depth=0",
     "build": "cross-env NODE_ENV=production node tasks/build.js",
     "serve": "cross-env NODE_ENV=production DEBUG=build* node tasks/serve.js",
     "start": "cross-env NODE_ENV=development DEBUG=build* node tasks/start.js",
+    "dev": "npm run start",
+    "workspace:install": "npm install",
+    "workspace:clean": "npm run clean --workspaces",
+    "workspace:build": "npm run build --workspaces",
+    "workspace:test": "npm run test --workspaces",
+    "studio:dev": "npm run dev --workspace=apps/studio",
+    "studio:build": "npm run build --workspace=apps/studio",
     "pretest": "npm run build",
     "test": "jest",
     "lint": "npm run lint:editorconfig && npm run lint:prettier && npm run lint:js && npm run lint:types && npm run lint:scss && npm run lint:html --ignore-scripts",
@@ -59,9 +70,11 @@
     "cross-env": "^10.0.0",
     "editorconfig-checker": "^6.1.0",
     "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-config-standard": "^17.0.0",
-    "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsdoc": "^48.2.2",
     "eslint-plugin-markdown": "^4.0.1",
     "eslint-plugin-n": "^16.6.2",

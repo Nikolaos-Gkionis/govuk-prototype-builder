@@ -1,0 +1,34 @@
+{
+  "name": "@govuk-prototype-builder/renderer",
+  "version": "0.1.0",
+  "description": "Server-side Nunjucks renderer for GOV.UK Prototype Builder",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@govuk-prototype-builder/schema": "*",
+    "nunjucks": "^3.2.4",
+    "govuk-frontend": "^5.11.2"
+  },
+  "devDependencies": {
+    "@types/nunjucks": "^3.2.6",
+    "typescript": "^5.9.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  }
+}

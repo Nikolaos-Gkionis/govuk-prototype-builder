@@ -45,6 +45,9 @@ metalsmith
         // Prevent browser opening
         open: false,
 
+        // Disable notification banner in browser
+        notify: false,
+
         // Serve files from directory
         server: paths.public
       })

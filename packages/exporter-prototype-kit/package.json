@@ -1,0 +1,35 @@
+{
+  "name": "@govuk-prototype-builder/exporter-prototype-kit",
+  "version": "0.1.0",
+  "description": "Exports prototype builder projects to GOV.UK Prototype Kit format",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "templates/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@govuk-prototype-builder/schema": "*",
+    "@govuk-prototype-builder/renderer": "*",
+    "json-logic-js": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/json-logic-js": "^2.0.7",
+    "typescript": "^5.9.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  }
+}

@@ -13,6 +13,9 @@ browserSync.init(
     // Disable BrowserStack UI
     ui: false,
 
+    // Disable notification banner in browser
+    notify: false,
+
     // Configure port
     port: ports.preview,
 

@@ -19,7 +19,7 @@ module.exports = {
         'prettier'
       ],
       files: [
-        '**/*.{cjs,js,mjs}',
+        '**/*.{cjs,js,mjs,ts,tsx}',
 
         // Check markdown `*.md` contains valid code blocks
         // https://github.com/eslint/eslint-plugin-markdown#advanced-configuration
@@ -80,6 +80,48 @@ module.exports = {
         jsdoc: {
           // Allows us to use type declarations that exist in our dependencies
           mode: 'typescript'
+        }
+      }
+    },
+    {
+      // TypeScript files
+      extends: [
+        'eslint:recommended',
+        'plugin:@typescript-eslint/recommended',
+        'plugin:import/recommended',
+        'plugin:import/typescript',
+        'prettier'
+      ],
+      files: ['**/*.{ts,tsx}'],
+      parser: '@typescript-eslint/parser',
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './tsconfig.json'
+      },
+      plugins: ['@typescript-eslint', 'import'],
+      rules: {
+        // Allow unused vars that start with underscore
+        '@typescript-eslint/no-unused-vars': [
+          'error',
+          { argsIgnorePattern: '^_' }
+        ],
+
+        // Import ordering
+        'import/order': [
+          'error',
+          {
+            alphabetize: { order: 'asc' },
+            'newlines-between': 'always'
+          }
+        ]
+      },
+      settings: {
+        'import/resolver': {
+          typescript: {
+            alwaysTryTypes: true,
+            project: './tsconfig.json'
+          }
         }
       }
     },

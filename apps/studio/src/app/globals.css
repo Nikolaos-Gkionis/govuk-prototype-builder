@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Primary button - blue like "Start Learning" */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-primary text-white font-semibold rounded-full shadow-button hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200;
+  }
+
+  /* Secondary button - white like "Learn more" */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 font-semibold rounded-full border border-gray-300 shadow-button hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200;
+  }
+
+  /* Link button - minimal */
+  .btn-link {
+    @apply inline-flex items-center text-primary hover:text-blue-700 font-medium transition-colors duration-200;
+  }
+
+  /* Feature cards */
+  .feature-card {
+    @apply bg-white rounded-xl p-6 shadow-soft hover:shadow-lg transition-all duration-300 border border-gray-100;
+  }
+
+  /* Hero section styling */
+  .hero-section {
+    @apply bg-hero-gradient py-20 px-4;
+  }
+
+  /* Navigation styling */
+  .nav-link {
+    @apply text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200;
+  }
+
+  .nav-link-active {
+    @apply text-gray-900 font-semibold;
+  }
+
+  /* Tertiary button - minimal link style */
+  .btn-tertiary {
+    @apply inline-flex items-center text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200;
+  }
+
+  /* Form Components */
+  .form-group {
+    @apply space-y-1;
+  }
+
+  .form-input {
+    @apply block px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 
+           focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
+           text-gray-900 bg-white;
+  }
+
+  .form-input:focus {
+    @apply ring-2 ring-primary border-primary;
+  }
+
+  /* Radio Card Components */
+  .radio-card {
+    @apply relative border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors cursor-pointer;
+  }
+
+  .radio-card:has(.radio-input:checked) {
+    @apply border-primary bg-primary/5;
+  }
+
+  .radio-input {
+    @apply absolute top-4 left-4 mt-0.5 h-4 w-4 text-primary border-gray-300 
+           focus:ring-primary focus:ring-offset-0;
+  }
+
+  .radio-label {
+    @apply block pl-8 cursor-pointer;
+  }
+
+  .radio-header {
+    @apply flex items-center justify-between mb-2;
+  }
+
+  .radio-title {
+    @apply font-medium text-gray-900;
+  }
+
+  .radio-description {
+    @apply text-sm text-gray-600;
+  }
+
+  .badge-coming-soon {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+           bg-yellow-100 text-yellow-800;
+  }
+
+  /* Info Cards */
+  .info-card {
+    @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm;
+  }
+
+  /* Template Cards */
+  .template-card {
+    @apply bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  .template-preview {
+    @apply bg-gray-50 p-6 border-b border-gray-200;
+  }
+
+  .template-mockup {
+    @apply bg-white p-4 rounded shadow-sm h-32;
+  }
+
+  .component-category-card {
+    @apply block bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 hover:shadow-sm transition-all;
+  }
+
+  .component-category-card:hover {
+    @apply transform -translate-y-0.5;
+  }
+}
+
+@layer utilities {
+  .text-hero {
+    font-size: 3.5rem;
+    line-height: 1.1;
+    font-weight: 700;
+  }
+  
+  @media (max-width: 768px) {
+    .text-hero {
+      font-size: 2.5rem;
+      line-height: 1.2;
+    }
+  }
+
+  .bg-page {
+    background-color: #ffffff;
+  }
+
+  .text-page {
+    color: #1e293b;
+  }
+
+  .text-muted {
+    color: #64748b;
+  }
+}

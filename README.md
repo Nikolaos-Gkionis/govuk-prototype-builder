@@ -1,102 +1,297 @@
-# GOV.UK Design System
+# GOV.UK Prototype Builder
 
-This repository contains the code for the GOV.UK Design System website. To find the code we provide for reuse by services, go to the [govuk-frontend repository](https://github.com/alphagov/govuk-frontend).
+AI Wrapper for GOV.UK Design System → Point-and-Click Prototyper with Prototype Kit Export
 
-## Run locally
+This is a monorepo containing a point-and-click interface for building GOV.UK prototypes, with AI assistance for content generation and automatic export to the GOV.UK Prototype Kit format.
 
-You'll need [Git](https://help.github.com/articles/set-up-git/) and [Node.js](https://nodejs.org/en/) installed to get this project running.
+## 🏗️ Project Structure
 
-Note: You will need the [active LTS (Long-term support)](https://github.com/nodejs/Release#release-schedule) Node.js version for this project (as specified in [.nvmrc](./.nvmrc))
+This project is organized as a monorepo with npm workspaces:
 
-### Fork repository (optional)
-
-If you're an external contributor make sure to [fork this project first](https://help.github.com/articles/fork-a-repo/)
-
-### Clone repository
-
-```shell
-git clone git@github.com:alphagov/govuk-design-system.git # or clone your own fork
-
-cd govuk-design-system
+```
+govuk-prototype-builder/
+├── apps/
+│   └── studio/               # Next.js app - Main UI for building prototypes
+├── packages/
+│   ├── schema/              # TypeScript types + Zod validation schemas
+│   ├── renderer/            # Nunjucks server-side renderer for preview
+│   ├── exporter-prototype-kit/  # Export to GOV.UK Prototype Kit
+│   ├── ai/                  # AI content assistant & prompt templates
+│   └── utils/               # Shared utility functions
+└── tasks.json              # Task Master project plan
 ```
 
-### Using nvm (optional)
+## 🚀 Quick Start
 
-If you work across multiple Node.js projects there's a good chance they require different Node.js and npm versions.
+### Prerequisites
 
-To enable this we use [nvm (Node Version Manager)](https://github.com/creationix/nvm) to switch between versions easily.
+- **Node.js**: Version 22.11.0 or later (see [.nvmrc](./.nvmrc))
+- **npm**: Version 10.5.0 or later
 
-1. [install nvm](https://github.com/creationix/nvm#installation)
-2. Run `nvm install` in the project directory (this will use [.nvmrc](./.nvmrc))
+### Installation
 
-### Install npm dependencies
+1. **Clone the repository**
 
-```shell
-npm install
+   ```bash
+   git clone https://github.com/nikolaos-gkionis/govuk-prototype-builder.git
+   cd govuk-prototype-builder
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+
+   ```bash
+   npm run studio:dev
+   ```
+
+   The studio interface will be available at http://localhost:3000
+
+## 📦 Workspace Commands
+
+### Development
+
+```bash
+# Start the studio development server
+npm run studio:dev
+
+# Build all packages
+npm run workspace:build
+
+# Run tests across all packages
+npm run workspace:test
+
+# Clean all build outputs
+npm run workspace:clean
 ```
 
-### Start a local server
+### Studio App Specific
 
-This will build sources, serve pages and watch for changes.
+```bash
+# Start studio in development mode
+npm run studio:dev
 
-```shell
-npm start
+# Build studio for production
+npm run studio:build
 ```
 
-## Build
+### Package Development
 
-Build `./src` to `./build`
+```bash
+# Build a specific package
+npm run build --workspace=packages/schema
 
-```shell
-npm run build
+# Test a specific package
+npm run test --workspace=packages/renderer
+
+# Watch mode for development
+npm run dev --workspace=packages/schema
 ```
 
-## Run the Sass linter
+### Linting & Quality
 
-We are using the tool [stylelint][stylelint] to lint the Sass files in
-`source/stylesheets`. You can run the linter from command line by running:
-
-```shell
+```bash
+# Run all linting checks
 npm run lint
+
+# Individual lint commands
+npm run lint:editorconfig
+npm run lint:prettier
+npm run lint:js
+npm run lint:types
+npm run lint:scss
 ```
 
-[stylelint]: https://github.com/stylelint/stylelint
+## 🎯 Core Features
 
-## GOV.UK Frontend packages
+### 🎨 Studio Interface
 
-Design System consumes the [GOV.UK Frontend](https://github.com/alphagov/govuk-frontend) package via [NPM](https://www.npmjs.com/).
-This is defined in the [package.json](package.json) file.
+- **Visual Journey Editor**: Drag-and-drop interface using React Flow
+- **Page Editor**: Configure fields, content, and validation rules
+- **Condition Builder**: Create branching logic without code
+- **Live Preview**: Real-time preview using GOV.UK Frontend components
+- **Project Management**: Save and load projects with versioning
+
+### 🤖 AI Assistant
+
+- **Content Generation**: Generate page copy, labels, and hints
+- **Field Suggestions**: AI-powered field type and validation recommendations
+- **Accessibility Review**: Automated accessibility suggestions
+- **Journey Optimization**: Smart suggestions for user flow improvements
+
+### 📤 Export Options
+
+- **GOV.UK Prototype Kit**: Generate a complete, runnable Express.js application
+- **Views Generation**: Nunjucks templates with GOV.UK macros
+- **Routes Generation**: Express routes with session handling and branching logic
+- **Validation Mapping**: Server-side validation with proper error handling
+
+## 📚 Package Details
+
+### `@govuk-prototype-builder/schema`
+
+Core data structures and validation schemas using Zod.
+
+**Key exports:**
+
+- `Project`, `Page`, `Field`, `Condition` types
+- Zod validation schemas
+- JSONLogic condition expressions
+
+### `@govuk-prototype-builder/renderer`
+
+Server-side Nunjucks renderer for preview functionality.
+
+**Features:**
+
+- GOV.UK Frontend macro integration
+- Page rendering with dynamic data
+- Error state handling
+
+### `@govuk-prototype-builder/exporter-prototype-kit`
+
+Generates GOV.UK Prototype Kit projects from studio projects.
+
+**Outputs:**
+
+- Complete Express.js application
+- Nunjucks templates
+- Route handlers with branching logic
+- Package.json with dependencies
+
+### `@govuk-prototype-builder/ai`
+
+AI content assistant with prompt templates and safety guards.
+
+**Capabilities:**
+
+- Structured content generation
+- Accessibility improvements
+- Field type suggestions
+- Safety validation
+
+### `@govuk-prototype-builder/utils`
+
+Shared utility functions across the monorepo.
+
+## 🔧 Development Workflow
+
+### 1. Task Management
+
+This project uses [Task Master](https://www.npmjs.com/package/task-master-ai) for structured development:
+
+```bash
+# View current tasks
+task-master next --file tasks.json
+
+# Mark tasks complete
+task-master complete --file tasks.json --id 1
+```
+
+### 2. Building Packages
+
+Packages must be built in dependency order. The workspace build command handles this automatically:
+
+```bash
+npm run workspace:build
+```
+
+For individual development:
+
+```bash
+# Build schema first (no dependencies)
+npm run build --workspace=packages/schema
+
+# Then renderer (depends on schema)
+npm run build --workspace=packages/renderer
+
+# Continue with other packages...
+```
+
+### 3. Testing Strategy
+
+- **Unit tests**: Individual package functionality
+- **Integration tests**: Cross-package interactions
+- **E2E tests**: Full workflow from studio to export
+- **Accessibility tests**: Automated a11y validation
+
+```bash
+# Run all tests
+npm test
+
+# Test specific packages
+npm run test --workspace=packages/schema
+```
+
+## 🌟 Contributing
+
+### Development Setup
+
+1. Fork and clone the repository
+2. Install dependencies with `npm install`
+3. Create a feature branch
+4. Make your changes
+5. Run tests and linting
+6. Submit a pull request
+
+### Code Standards
+
+- **TypeScript**: All new code should be TypeScript
+- **ESLint**: Follow the configured linting rules
+- **Prettier**: Code formatting is automated
+- **EditorConfig**: Consistent editor settings
+
+### Commit Messages
+
+Follow conventional commit format:
+
+```
+feat(studio): add drag-and-drop page ordering
+fix(renderer): handle missing field validation
+docs(readme): update installation instructions
+```
+
+## 🚀 Deployment
+
+### CI/CD Pipeline
+
+GitHub Actions automatically:
+
+- Runs all tests and linting
+- Builds all packages
+- Checks for broken links
+- Validates workspace configuration
+
+### Production Deployment
+
+- Studio app can be deployed to Vercel, Netlify, or similar
+- Packages are published to npm (when public)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Support
+
+- **Issues**: Report bugs via [GitHub Issues](https://github.com/nikolaos-gkionis/govuk-prototype-builder/issues)
+- **Discussions**: Join conversations in [GitHub Discussions](https://github.com/nikolaos-gkionis/govuk-prototype-builder/discussions)
+- **Documentation**: See individual package READMEs for detailed API docs
+
+## 🎯 Roadmap
+
+See [tasks.json](tasks.json) for the complete development roadmap, including:
+
+- ✅ Monorepo setup and workspace configuration
+- 🔄 Core schema and rendering engine
+- 📋 Studio interface development
+- 🤖 AI integration and content generation
+- 📤 Prototype Kit export functionality
+- 🧪 Comprehensive testing and documentation
 
 ---
 
-## Continuous integration
-
-When changes are pushed to GitHub, [Github Actions][github-actions] will:
-
-- run the tests
-- lint the Sass stylesheets in `source/stylesheets`
-- run the `npm run build` command to ensure that the site can be generated
-
-If any of these fail, this will be reported in the GitHub status checks
-interface.
-
-[github-actions]: https://github.com/alphagov/govuk-design-system/actions
-
-## Deployment
-
-- [How the Design System is deployed to production](docs/deployment.md#production)
-- [How branch and PR previews are deployed](docs/deployment.md#pull-request-previews)
-
-## Security
-
-GDS is an advocate of responsible vulnerability disclosure. If you’ve found a vulnerability, we would like to know so we can fix it.
-
-To learn how to report a security vulnerability, [see our security policy](https://github.com/alphagov/govuk-design-system/security/policy).
-
-## Contributing
-
-The govuk-design-system repository is public and we welcome contributions from anyone.
-
-Contributors to alphagov repositories are expected to follow the [Contributor Covenant Code of Conduct](https://github.com/alphagov/.github/blob/main/CODE_OF_CONDUCT.md#contributor-covenant-code-of-conduct). Contributors working within government are also expected to follow the [Civil Service code](https://www.gov.uk/government/publications/civil-service-code/the-civil-service-code).
-
-We're unable to monitor activity on this repository outside of our office hours (10am to 4pm, UK time). To get a faster response at other times, you can [report abuse or spam to GitHub](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam).
+**Built with ❤️ for the GOV.UK community**
