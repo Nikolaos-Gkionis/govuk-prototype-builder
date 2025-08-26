@@ -2,6 +2,205 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import GOV.UK Frontend styles for component previews */
+@import "govuk-frontend/dist/govuk/govuk-frontend.min.css";
+
+/* GOV.UK Component Preview Container Styles */
+.govuk-preview-container {
+  /* Maintain basic container styles but don't reset everything */
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+  font-family: "GDS Transport", Arial, sans-serif;
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+/* Ensure GOV.UK buttons aren't affected by Tailwind button resets */
+.govuk-preview-container .govuk-button {
+  background-color: #00703c;
+  border: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: 0 2px 0 #002d13;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "GDS Transport", Arial, sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 22px;
+  padding: 8px 10px 7px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: top;
+}
+
+/* Fix Tailwind conflicts with GOV.UK accordion buttons */
+.govuk-preview-container .govuk-accordion__section-button {
+  background: transparent;
+  border: 0;
+  color: #1d70b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  margin: 0;
+  padding: 0;
+  text-decoration: underline;
+  text-align: left;
+  width: 100%;
+}
+
+/* Ensure proper accordion control styling */
+.govuk-preview-container .govuk-accordion__show-all {
+  background: transparent;
+  border: 0;
+  color: #1d70b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  margin: 0;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* Fix warning button to be red/destructive color */
+.govuk-preview-container .govuk-button--warning {
+  background-color: #d4351c !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 0 #942514 !important;
+  color: #fff !important;
+}
+
+.govuk-preview-container .govuk-button--warning:hover {
+  background-color: #aa2a16 !important;
+}
+
+.govuk-preview-container .govuk-button--warning:focus {
+  background-color: #aa2a16 !important;
+}
+
+/* Fix secondary button to be grey */
+.govuk-preview-container .govuk-button--secondary {
+  background-color: #f3f2f1 !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 0 #929191 !important;
+  color: #0b0c0c !important;
+}
+
+.govuk-preview-container .govuk-button--secondary:hover {
+  background-color: #dbdad9 !important;
+  color: #0b0c0c !important;
+}
+
+.govuk-preview-container .govuk-button--secondary:focus {
+  background-color: #dbdad9 !important;
+  color: #0b0c0c !important;
+}
+
+/* Fix details component triangle to be blue - for component previews */
+.govuk-preview-container .govuk-details__summary {
+  color: #1d70b8 !important;
+}
+
+.govuk-preview-container .govuk-details__summary::before {
+  border-color: transparent transparent transparent #1d70b8 !important;
+}
+
+.govuk-preview-container .govuk-details__summary:hover {
+  color: #003078 !important;
+}
+
+.govuk-preview-container .govuk-details__summary:hover::before {
+  border-color: transparent transparent transparent #003078 !important;
+}
+
+.govuk-preview-container .govuk-details__summary:focus {
+  color: #0b0c0c !important;
+  background-color: #ffdd00 !important;
+}
+
+.govuk-preview-container .govuk-details__summary:focus::before {
+  border-color: transparent transparent transparent #0b0c0c !important;
+}
+
+/* Fix details component triangle for user prototypes */
+.govuk-details__summary {
+  color: #1d70b8;
+}
+
+.govuk-details__summary::before {
+  border-color: transparent transparent transparent #1d70b8;
+}
+
+.govuk-details__summary:hover {
+  color: #003078;
+}
+
+.govuk-details__summary:hover::before {
+  border-color: transparent transparent transparent #003078;
+}
+
+.govuk-details__summary:focus {
+  color: #0b0c0c;
+  background-color: #ffdd00;
+}
+
+.govuk-details__summary:focus::before {
+  border-color: transparent transparent transparent #0b0c0c;
+}
+
+/* Remove unwanted focus outline from notification banner */
+.govuk-preview-container .govuk-notification-banner:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.govuk-notification-banner:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Fix password input show/hide button visibility */
+.govuk-preview-container .govuk-password-input__toggle {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.govuk-password-input__toggle {
+  display: inline-block;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Ensure password input wrapper displays correctly */
+.govuk-preview-container .govuk-password-input__wrapper {
+  display: flex !important;
+  align-items: stretch !important;
+}
+
+.govuk-password-input__wrapper {
+  display: flex;
+  align-items: stretch;
+}
+
+/* Fix start button to keep chevron inline */
+.govuk-preview-container .govuk-button--start {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+}
+
+.govuk-preview-container .govuk-button__start-icon {
+  flex-shrink: 0 !important;
+}
+
 @layer base {
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

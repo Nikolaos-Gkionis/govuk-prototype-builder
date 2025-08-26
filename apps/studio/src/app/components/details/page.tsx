@@ -1,0 +1,36 @@
+import ComponentDisplay from '../ComponentDisplay';
+
+const detailsComponent = {
+  name: 'Details',
+  description: 'Make a page easier to scan by letting users reveal more detailed information only if they need it',
+  preview: `<details class="govuk-details" data-module="govuk-details">
+    <summary class="govuk-details__summary">
+      <span class="govuk-details__summary-text">
+        Help with nationality
+      </span>
+    </summary>
+    <div class="govuk-details__text">
+      We need to know your nationality so we can work out which elections you're entitled to vote in. If you cannot provide your nationality, you'll have to send copies of identity documents through the post.
+    </div>
+  </details>`,
+  code: {
+    html: `<details class="govuk-details" data-module="govuk-details">
+  <summary class="govuk-details__summary">
+    <span class="govuk-details__summary-text">
+      Help with nationality
+    </span>
+  </summary>
+  <div class="govuk-details__text">
+    We need to know your nationality so we can work out which elections you're entitled to vote in.
+  </div>
+</details>`,
+    nunjucks: `{{ govukDetails({
+  summaryText: "Help with nationality",
+  text: "We need to know your nationality so we can work out which elections you're entitled to vote in."
+}) }}`
+  }
+};
+
+export default function DetailsPage() {
+  return <ComponentDisplay component={detailsComponent} />;
+}

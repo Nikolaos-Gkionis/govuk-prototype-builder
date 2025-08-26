@@ -1,3 +1,177 @@
+'use client';
+
+import { useState } from 'react';
+
+// Simple GOV.UK component data
+const GOVUK_COMPONENTS = {
+  forms: [
+    {
+      name: 'Text Input',
+      description: 'Help users enter text information',
+      preview: `<div class="govuk-form-group">
+        <label class="govuk-label" for="input-example">Full name</label>
+        <input class="govuk-input" id="input-example" name="fullName" type="text">
+      </div>`
+    },
+    {
+      name: 'Radio Buttons',
+      description: 'Help users select a single option',
+      preview: `<div class="govuk-form-group">
+        <fieldset class="govuk-fieldset">
+          <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+            <h2 class="govuk-fieldset__heading">Where do you live?</h2>
+          </legend>
+          <div class="govuk-radios">
+            <div class="govuk-radios__item">
+              <input class="govuk-radios__input" id="england" name="location" type="radio" value="england">
+              <label class="govuk-label govuk-radios__label" for="england">England</label>
+            </div>
+            <div class="govuk-radios__item">
+              <input class="govuk-radios__input" id="scotland" name="location" type="radio" value="scotland">
+              <label class="govuk-label govuk-radios__label" for="scotland">Scotland</label>
+            </div>
+          </div>
+        </fieldset>
+      </div>`
+    },
+    {
+      name: 'Button',
+      description: 'Help users carry out an action',
+      preview: `<button type="submit" class="govuk-button">Save and continue</button>`
+    }
+  ],
+  content: [
+    {
+      name: 'Warning Text',
+      description: 'Help users identify important information',
+      preview: `<div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+          <span class="govuk-warning-text__assistive">Warning</span>
+          You can be fined up to £5,000 if you do not register.
+        </strong>
+      </div>`
+    },
+    {
+      name: 'Panel',
+      description: 'Display important information',
+      preview: `<div class="govuk-panel govuk-panel--confirmation">
+        <h1 class="govuk-panel__title">Application complete</h1>
+        <div class="govuk-panel__body">Your reference number<br><strong>HDJ2123F</strong></div>
+      </div>`
+    }
+  ]
+};
+
+function ComponentBrowser() {
+  const [selectedCategory, setSelectedCategory] = useState<'forms' | 'content'>('forms');
+  const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
+
+  const addToPrototype = (componentName: string) => {
+    setSelectedComponents(prev => [...prev, componentName]);
+    // TODO: Add to actual prototype builder
+    console.log('Added to prototype:', componentName);
+  };
+
+  return (
+    <section className="mt-12">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Live Component Browser</h2>
+      
+      {/* Category Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setSelectedCategory('forms')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              selectedCategory === 'forms'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Form Components
+          </button>
+          <button
+            onClick={() => setSelectedCategory('content')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              selectedCategory === 'content'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Content Components
+          </button>
+        </nav>
+      </div>
+
+      {/* Selected Components */}
+      {selectedComponents.length > 0 && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="text-sm font-medium text-green-800 mb-2">
+            Selected for Prototype ({selectedComponents.length})
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {selectedComponents.map((comp, index) => (
+              <span 
+                key={index}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+              >
+                {comp}
+                <button 
+                  onClick={() => setSelectedComponents(prev => prev.filter((_, i) => i !== index))}
+                  className="ml-1 text-green-600 hover:text-green-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <button className="mt-3 btn-primary text-sm">
+            Build Prototype Page
+          </button>
+        </div>
+      )}
+
+      {/* Component Grid */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {GOVUK_COMPONENTS[selectedCategory].map((component, index) => (
+          <div key={index} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            {/* Live Preview */}
+            <div className="p-6 bg-gray-50 border-b border-gray-200">
+              <div 
+                className="bg-white p-4 rounded shadow-sm"
+                dangerouslySetInnerHTML={{ __html: component.preview }}
+                style={{
+                  fontFamily: '"GDS Transport", Arial, sans-serif',
+                  fontSize: '19px',
+                  lineHeight: '1.25'
+                }}
+              />
+            </div>
+            
+            {/* Component Info */}
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-900 mb-2">{component.name}</h3>
+              <p className="text-sm text-gray-600 mb-4">{component.description}</p>
+              
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => addToPrototype(component.name)}
+                  className="btn-primary text-sm"
+                >
+                  Add to Prototype
+                </button>
+                                        <a href="/components" className="btn-secondary text-sm">
+                          View All Components
+                        </a>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function TemplatesPage() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
@@ -41,7 +215,7 @@ export default function TemplatesPage() {
           <p className="text-gray-600 mb-4">
             Access all official GOV.UK Design System components including forms, navigation, and content elements.
           </p>
-          <a href="/templates/components" className="btn-secondary">
+          <a href="/components" className="btn-secondary">
             Browse Components
           </a>
         </div>
@@ -128,7 +302,7 @@ export default function TemplatesPage() {
       <section>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Component Categories</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <a href="/templates/components/form" className="component-category-card">
+          <a href="/components" className="component-category-card">
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -138,7 +312,7 @@ export default function TemplatesPage() {
             <p className="text-sm text-gray-600">Inputs, buttons, checkboxes, radios</p>
           </a>
 
-          <a href="/templates/components/navigation" className="component-category-card">
+          <a href="/components" className="component-category-card">
             <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mb-3">
               <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -148,7 +322,7 @@ export default function TemplatesPage() {
             <p className="text-sm text-gray-600">Headers, breadcrumbs, pagination</p>
           </a>
 
-          <a href="/templates/components/content" className="component-category-card">
+          <a href="/components" className="component-category-card">
             <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
               <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -158,7 +332,7 @@ export default function TemplatesPage() {
             <p className="text-sm text-gray-600">Panels, tables, tags, warnings</p>
           </a>
 
-          <a href="/templates/components/feedback" className="component-category-card">
+          <a href="/components" className="component-category-card">
             <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mb-3">
               <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -169,6 +343,9 @@ export default function TemplatesPage() {
           </a>
         </div>
       </section>
+
+      {/* Live Component Browser */}
+      <ComponentBrowser />
 
       {/* Integration Notice */}
       <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
