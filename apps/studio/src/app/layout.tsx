@@ -38,6 +38,9 @@ export default function RootLayout({
                   <Link href="/projects" className="nav-link">
                     Projects
                   </Link>
+                  <Link href="/builder" className="nav-link">
+                    Builder
+                  </Link>
                   <Link href="/templates" className="nav-link">
                     Templates
                   </Link>

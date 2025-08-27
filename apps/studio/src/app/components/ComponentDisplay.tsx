@@ -164,13 +164,8 @@ export default function ComponentDisplay({ component }: ComponentDisplayProps) {
   // Re-initialize components when variant changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (typeof window !== 'undefined' && (window as any).GOVUKFrontend) {
-        (window as any).GOVUKFrontend.initAll();
-      }
-      
-      // Always setup manual password input toggle (regardless of GOV.UK Frontend)
+      // Handle password inputs (this is a custom component)
       const passwordInputs = document.querySelectorAll('[data-module="govuk-password-input"]');
-      
       passwordInputs.forEach((element) => {
         const toggleButton = element.querySelector('.govuk-password-input__toggle') as HTMLButtonElement;
         const passwordInput = element.querySelector('.govuk-password-input__input') as HTMLInputElement;
@@ -196,39 +191,104 @@ export default function ComponentDisplay({ component }: ComponentDisplayProps) {
         }
       });
 
-      // Always setup manual radio conditional content toggle (regardless of GOV.UK Frontend)
+      // Handle radio button conditionals
       const radioGroups = document.querySelectorAll('[data-module="govuk-radios"]');
+      console.log('Found radio groups:', radioGroups.length);
       
       radioGroups.forEach((element) => {
         const radioInputs = element.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
         const conditionalDivs = element.querySelectorAll('.govuk-radios__conditional') as NodeListOf<HTMLElement>;
         
+        console.log('Radio group has', radioInputs.length, 'radio inputs and', conditionalDivs.length, 'conditional divs');
+        
         // Hide all conditional divs by default
         conditionalDivs.forEach(div => {
           div.classList.add('govuk-radios__conditional--hidden');
+          console.log('Hiding conditional div:', div.id);
         });
         
         radioInputs.forEach((radioInput) => {
+          // Only process radio buttons that have conditional content
+          const conditionalId = radioInput.getAttribute('data-aria-controls');
+          if (!conditionalId) {
+            console.log('Skipping radio without conditional content:', radioInput.value);
+            return; // Skip this radio button
+          }
+          
           // Remove any existing event listeners to prevent duplicates
           const newRadio = radioInput.cloneNode(true) as HTMLInputElement;
           radioInput.parentNode?.replaceChild(newRadio, radioInput);
           
           // Add event listener to the new radio
           newRadio.addEventListener('change', () => {
+            console.log('Radio changed:', newRadio.value, 'checked:', newRadio.checked);
+            
             // Hide all conditional divs first
             conditionalDivs.forEach(div => {
               div.classList.add('govuk-radios__conditional--hidden');
+              console.log('Hiding div:', div.id);
             });
             
-            // Show the conditional div for the selected radio (toggle behavior)
+            // Show the conditional div for the selected radio
             if (newRadio.checked) {
-              const conditionalId = newRadio.getAttribute('data-aria-controls');
-              if (conditionalId) {
-                const conditionalDiv = document.getElementById(conditionalId);
-                if (conditionalDiv) {
-                  conditionalDiv.classList.remove('govuk-radios__conditional--hidden');
-                }
+              const conditionalDiv = document.getElementById(conditionalId);
+              console.log('Looking for conditional div with ID:', conditionalId);
+              if (conditionalDiv) {
+                conditionalDiv.classList.remove('govuk-radios__conditional--hidden');
+                console.log('Showing div:', conditionalDiv.id);
+              } else {
+                console.log('Conditional div not found with ID:', conditionalId);
               }
+            }
+          });
+        });
+      });
+
+      // Handle checkbox conditionals
+      const checkboxGroups = document.querySelectorAll('[data-module="govuk-checkboxes"]');
+      console.log('Found checkbox groups:', checkboxGroups.length);
+      
+      checkboxGroups.forEach((element) => {
+        const checkboxInputs = element.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+        const conditionalDivs = element.querySelectorAll('.govuk-checkboxes__conditional') as NodeListOf<HTMLElement>;
+        
+        console.log('Checkbox group has', checkboxInputs.length, 'checkbox inputs and', conditionalDivs.length, 'conditional divs');
+        
+        // Hide all conditional divs by default
+        conditionalDivs.forEach(div => {
+          div.classList.add('govuk-checkboxes__conditional--hidden');
+          console.log('Hiding conditional div:', div.id);
+        });
+        
+        checkboxInputs.forEach((checkboxInput) => {
+          // Only process checkboxes that have conditional content
+          const conditionalId = checkboxInput.getAttribute('data-aria-controls');
+          if (!conditionalId) {
+            console.log('Skipping checkbox without conditional content:', checkboxInput.value);
+            return; // Skip this checkbox
+          }
+          
+          // Remove any existing event listeners to prevent duplicates
+          const newCheckbox = checkboxInput.cloneNode(true) as HTMLInputElement;
+          checkboxInput.parentNode?.replaceChild(newCheckbox, checkboxInput);
+          
+          // Add event listener to the new checkbox
+          newCheckbox.addEventListener('change', () => {
+            console.log('Checkbox changed:', newCheckbox.value, 'checked:', newCheckbox.checked);
+            
+            const conditionalDiv = document.getElementById(conditionalId);
+            console.log('Looking for conditional div with ID:', conditionalId);
+            
+            if (conditionalDiv) {
+              if (newCheckbox.checked) {
+                conditionalDiv.classList.remove('govuk-checkboxes__conditional--hidden');
+                console.log('Showing div:', conditionalDiv.id);
+              } else {
+                conditionalDiv.classList.add('govuk-checkboxes__conditional--hidden');
+                console.log('Hiding div:', conditionalDiv.id);
+              }
+            } else {
+              console.log('Conditional div not found with ID:', conditionalId);
             }
           });
         });

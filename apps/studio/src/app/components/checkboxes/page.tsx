@@ -53,6 +53,18 @@ const checkboxesComponent = {
           Waste from animal carcasses
         </label>
       </div>
+      <div class="govuk-checkboxes__item">
+        <input class="govuk-checkboxes__input" id="waste-2" name="waste" type="checkbox" value="mines">
+        <label class="govuk-label govuk-checkboxes__label" for="waste-2">
+          Waste from mines or quarries
+        </label>
+      </div>
+      <div class="govuk-checkboxes__item">
+        <input class="govuk-checkboxes__input" id="waste-3" name="waste" type="checkbox" value="farm">
+        <label class="govuk-label govuk-checkboxes__label" for="waste-3">
+          Farm or agricultural waste
+        </label>
+      </div>
     </div>
   </fieldset>
 </div>`,
@@ -73,6 +85,14 @@ const checkboxesComponent = {
     {
       value: "carcasses",
       text: "Waste from animal carcasses"
+    },
+    {
+      value: "mines",
+      text: "Waste from mines or quarries"
+    },
+    {
+      value: "farm",
+      text: "Farm or agricultural waste"
     }
   ]
 }) }}`
