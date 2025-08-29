@@ -59,22 +59,51 @@ Building a point-and-click interface for creating GOV.UK prototypes without codi
   - Responsive sidebar with page palette
   - Toolbar with save/preview functionality
   - Connection lines between pages (ready for branching logic)
+  - **NEW**: Infinite dot grid background for better visual alignment
+  - **NEW**: Custom SVG icons for all page types (replaced emoji icons)
 
-## 🚧 **Next Priority: Task 7 - Condition Builder UX**
+## 🚧 **Next Priority: Task 7 - Advanced Builder Features**
 
 ### What We'll Build Next:
 
-- **Visual Rule Builder**: Field/answer selectors → JSONLogic AST
-- **Condition Types**: Support equals, contains, greater/less, any/all
-- **Real-time Evaluation**: Provide evaluation against sample answers
-- **Branching Logic**: Connect pages with conditional flows
+- **Floating Toolbar**: Hover-activated toolbar at bottom with core functions
+- **Page Connections**: Visual connection system between pages with drag handles
+- **Content Modal**: Rich content editor for each page type (text, fields, validation)
+- **Properties Panel**: Right-side panel for conditional logic and page configuration
+- **Conditional Routing**: If/else statements linking form fields to different pages
 
 ### Implementation Plan:
 
-1. **Condition Panel**: Add condition creation interface to selected pages
-2. **Rule Builder**: Visual interface for building JSONLogic expressions
-3. **Connection Management**: Handle conditional connections between pages
-4. **Validation**: Ensure logical flow and prevent circular references
+1. **Floating Toolbar** (Bottom, hover-activated):
+   - Connection tool for linking pages
+   - Content editor button
+   - Properties panel toggle
+   - Zoom controls
+   - Grid snap toggle
+
+2. **Page Connections System**:
+   - Drag handles on page edges
+   - Visual connection lines with arrows
+   - Connection validation (prevent circular references)
+   - Conditional connection points
+
+3. **Content Modal**:
+   - Rich text editor for content pages
+   - Form field builder for question pages
+   - Field validation rules
+   - GOV.UK Design System component picker
+
+4. **Properties Panel** (Right side):
+   - Page configuration options
+   - Conditional logic builder
+   - Field mapping and validation
+   - Routing rules and next page logic
+
+5. **Conditional Logic**:
+   - Visual if/else statement builder
+   - Field condition mapping (radio → different pages)
+   - JSONLogic expression generator
+   - Real-time validation and testing
 
 ## 🎉 **Today's Major Achievement**
 

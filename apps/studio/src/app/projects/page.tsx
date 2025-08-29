@@ -1,4 +1,55 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  startType: 'blank' | 'template';
+  createdAt: string;
+  pages: any[];
+  connections: any[];
+}
+
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Load projects from localStorage
+    const savedProjects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
+    setProjects(savedProjects);
+    setIsLoading(false);
+  }, []);
+
+  const handleDeleteProject = (projectId: string) => {
+    if (confirm('Are you sure you want to delete this prototype? This action cannot be undone.')) {
+      const updatedProjects = projects.filter(p => p.id !== projectId);
+      localStorage.setItem('govuk-prototypes', JSON.stringify(updatedProjects));
+      setProjects(updatedProjects);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       {/* Page Header */}
@@ -10,27 +61,77 @@ export default function ProjectsPage() {
           </p>
         </div>
         <div className="flex-shrink-0">
-          <a href="/projects/new" className="btn-primary" role="button">
+          <Link href="/projects/new" className="btn-primary" role="button">
             Create new prototype
-          </a>
+          </Link>
         </div>
       </div>
 
-      {/* Empty State */}
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center mb-12">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+      {projects.length === 0 ? (
+        /* Empty State */
+        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center mb-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No prototypes yet</h3>
+          <p className="text-gray-600 mb-6">
+            You haven&apos;t created any prototypes. Click &quot;Create new prototype&quot; to get started.
+          </p>
+          <Link href="/projects/new" className="btn-primary">
+            Create your first prototype
+          </Link>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">No prototypes yet</h3>
-        <p className="text-gray-600 mb-6">
-          You haven&apos;t created any prototypes. Click &quot;Create new prototype&quot; to get started.
-        </p>
-        <a href="/projects/new" className="btn-primary">
-          Create your first prototype
-        </a>
-      </div>
+      ) : (
+        /* Projects List */
+        <div className="space-y-6 mb-12">
+          {projects.map((project) => (
+            <div key={project.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900">{project.name}</h3>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      project.startType === 'blank' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {project.startType === 'blank' ? 'Blank' : 'Template'}
+                    </span>
+                  </div>
+                  
+                  {project.description && (
+                    <p className="text-gray-600 mb-3">{project.description}</p>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>Created: {formatDate(project.createdAt)}</span>
+                    <span>Pages: {project.pages.length}</span>
+                    <span>Connections: {project.connections.length}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Link 
+                    href={`/builder?projectId=${project.id}`}
+                    className="btn-primary text-sm"
+                  >
+                    Open
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteProject(project.id)}
+                    className="btn-tertiary text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete prototype"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       
       {/* Info Section */}
       <div className="grid lg:grid-cols-2 gap-8">

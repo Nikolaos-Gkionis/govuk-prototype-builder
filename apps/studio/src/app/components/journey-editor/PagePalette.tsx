@@ -78,6 +78,13 @@ export function PagePalette() {
                     src={pageType.icon} 
                     alt={`${pageType.name} icon`}
                     className="w-12 h-12"
+                    onError={(e) => {
+                      console.error(`Failed to load icon: ${pageType.icon}`);
+                      console.error('Image error:', e);
+                    }}
+                    onLoad={() => {
+                      console.log(`Successfully loaded icon: ${pageType.icon}`);
+                    }}
                   />
                 </div>
                 

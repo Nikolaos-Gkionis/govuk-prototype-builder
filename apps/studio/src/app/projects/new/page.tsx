@@ -1,4 +1,79 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface ProjectData {
+  name: string;
+  description: string;
+  startType: 'blank' | 'template';
+}
+
 export default function NewProjectPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState<ProjectData>({
+    name: '',
+    description: '',
+    startType: 'blank'
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleRadioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      startType: e.target.value as 'blank' | 'template'
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      alert('Please enter a prototype name');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Create a unique project ID
+      const projectId = `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Save project data to localStorage (in a real app, this would go to a database)
+      const project = {
+        id: projectId,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        startType: formData.startType,
+        createdAt: new Date().toISOString(),
+        pages: [],
+        connections: []
+      };
+
+      // Save to localStorage
+      const existingProjects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
+      existingProjects.push(project);
+      localStorage.setItem('govuk-prototypes', JSON.stringify(existingProjects));
+
+      // Redirect to builder with project data
+      router.push(`/builder?projectId=${projectId}`);
+      
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Error creating project. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       {/* Page Header */}
@@ -12,7 +87,7 @@ export default function NewProjectPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Form - 2/3 width */}
         <div className="lg:col-span-2">
-          <form className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Project Name */}
             <div className="form-group">
               <label htmlFor="prototype-name" className="block text-sm font-medium text-gray-900 mb-2">
@@ -24,9 +99,12 @@ export default function NewProjectPage() {
               <input 
                 className="form-input w-full"
                 id="prototype-name" 
-                name="prototype-name" 
+                name="name" 
                 type="text"
                 placeholder="Enter prototype name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
               />
             </div>
 
@@ -41,9 +119,11 @@ export default function NewProjectPage() {
               <textarea 
                 className="form-input w-full"
                 id="prototype-description" 
-                name="prototype-description" 
+                name="description" 
                 rows={3}
                 placeholder="Enter description"
+                value={formData.description}
+                onChange={handleInputChange}
               ></textarea>
             </div>
 
@@ -57,10 +137,11 @@ export default function NewProjectPage() {
                   <input 
                     className="radio-input" 
                     id="start-blank" 
-                    name="start-type" 
+                    name="startType" 
                     type="radio" 
                     value="blank"
-                    defaultChecked
+                    checked={formData.startType === 'blank'}
+                    onChange={handleRadioChange}
                   />
                   <label htmlFor="start-blank" className="radio-label">
                     <div className="radio-header">
@@ -76,9 +157,11 @@ export default function NewProjectPage() {
                   <input 
                     className="radio-input" 
                     id="start-template" 
-                    name="start-type" 
+                    name="startType" 
                     type="radio" 
                     value="template"
+                    checked={formData.startType === 'template'}
+                    onChange={handleRadioChange}
                   />
                   <label htmlFor="start-template" className="radio-label">
                     <div className="radio-header">
@@ -95,8 +178,12 @@ export default function NewProjectPage() {
 
             {/* Actions */}
             <div className="flex items-center gap-4 pt-6">
-              <button type="submit" className="btn-primary">
-                Create prototype
+              <button 
+                type="submit" 
+                className="btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Creating...' : 'Create prototype'}
               </button>
               <a href="/projects" className="btn-tertiary">
                 Cancel

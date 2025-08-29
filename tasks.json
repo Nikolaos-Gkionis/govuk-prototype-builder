@@ -57,21 +57,31 @@
         "status": "completed",
         "dependencies": [3, 4, 5],
         "priority": "high",
-        "details": "✅ COMPLETED: Built complete visual journey editor with:\n✅ Drag & drop page types (Start, Content, Question, Check Answers, Confirmation)\n✅ Interactive canvas with page positioning and selection\n✅ Page title editing and deletion\n✅ Visual page type indicators with colors and icons\n✅ Responsive sidebar with page palette\n✅ Toolbar with save/preview functionality\n✅ Connection lines between pages (ready for branching logic)\n\nNext: Task 7 - Condition Builder UX for creating branching logic",
-        "testStrategy": "✅ Journey editor loads at /builder route\n✅ Page types can be dragged onto canvas\n✅ Pages can be selected, moved, and edited\n✅ No console errors or build issues"
+        "details": "✅ COMPLETED: Built complete visual journey editor with:\n✅ Drag & drop page types (Start, Content, Question, Check Answers, Confirmation)\n✅ Interactive canvas with page positioning and selection\n✅ Page title editing and deletion\n✅ Visual page type indicators with colors and icons\n✅ Responsive sidebar with page palette\n✅ Toolbar with save/preview functionality\n✅ Connection lines between pages (ready for branching logic)\n✅ Infinite dot grid background for better visual alignment\n✅ Custom SVG icons for all page types\n\nNext: Task 7 - Advanced Builder Features for connections, content, and conditionals",
+        "testStrategy": "✅ Journey editor loads at /builder route\n✅ Page types can be dragged onto canvas\n✅ Pages can be selected, moved, and edited\n✅ Infinite dot grid displays correctly\n✅ Custom SVG icons render properly\n✅ No console errors or build issues"
       },
       {
         "id": 7,
+        "title": "Advanced Builder Features",
+        "description": "Floating toolbar, page connections, content modal, and properties panel.",
+        "status": "pending",
+        "dependencies": [6],
+        "priority": "high",
+        "details": "Build comprehensive builder interface with:\n✅ Floating toolbar (bottom, hover-activated): connection tool, content editor, properties toggle, zoom controls, grid snap\n✅ Page connections system: drag handles, visual connection lines with arrows, connection validation, conditional connection points\n✅ Content modal: rich text editor, form field builder, field validation rules, GOV.UK component picker\n✅ Properties panel (right side): page configuration, conditional logic builder, field mapping, routing rules\n✅ Conditional logic: visual if/else builder, field condition mapping, JSONLogic generator, real-time validation",
+        "testStrategy": "✅ Floating toolbar appears on hover with all tools functional\n✅ Pages can be connected with visual connection lines\n✅ Content modal opens and saves content correctly\n✅ Properties panel shows page configuration options\n✅ Conditional logic can be built and tested"
+      },
+      {
+        "id": 8,
         "title": "Condition Builder UX",
         "description": "Friendly UI to create branching without code.",
         "status": "pending",
-        "dependencies": [5, 3],
+        "dependencies": [7, 3],
         "priority": "high",
         "details": "Create a visual rule builder: field/answer selectors → JSONLogic AST. Support equals, contains, greater/less, any/all. Provide real-time evaluation against sample answers.",
         "testStrategy": "Given sample answers, conditions evaluate identically in UI and in server evaluation tests."
       },
       {
-        "id": 8,
+        "id": 9,
         "title": "Project storage & versioning",
         "description": "Save projects to disk as JSON with migrations.",
         "status": "pending",
@@ -81,7 +91,7 @@
         "testStrategy": "Round-trip save/load preserves project equality; migration upgrades old examples."
       },
       {
-        "id": 9,
+        "id": 10,
         "title": "AI content assistant (LLM) for page scaffolding",
         "description": "Generate page copy, labels, validation, and suggested journeys.",
         "status": "pending",
@@ -91,7 +101,7 @@
         "testStrategy": "Golden tests: prompts produce parseable JSON matching Zod; E2E: create a 3-page flow from one sentence."
       },
       {
-        "id": 10,
+        "id": 11,
         "title": "Exporter: scaffold Prototype Kit project",
         "description": "Generate a runnable Express app in the GOV.UK Prototype Kit style.",
         "status": "pending",
@@ -115,7 +125,7 @@
         "title": "Routes codegen: branching + session data",
         "description": "Emit `app/routes.js` to read `request.session.data` and redirect based on JSONLogic.",
         "status": "pending",
-        "dependencies": [10, 7, 3],
+        "dependencies": [11, 8, 3],
         "priority": "high",
         "details": "Generate GET for each path to render view, POST handlers to persist answers into `request.session.data[fieldName]` then evaluate condition graph to pick next route. Use the kit’s example style. :contentReference[oaicite:4]{index=4}",
         "testStrategy": "Automated route tests: post answers and expect redirects to computed next pages across branches."
@@ -155,7 +165,7 @@
         "title": "Studio → Export UX",
         "description": "Add Export dialog: choose zip or folder, kit version notes.",
         "status": "pending",
-        "dependencies": [10, 11, 12],
+        "dependencies": [11, 12, 13],
         "priority": "medium",
         "details": "Server action zips export into download. Include README with how to `npx govuk-prototype-kit@latest create` vs using generated project directly; note Node 22 LTS requirement. :contentReference[oaicite:5]{index=5}",
         "testStrategy": "Download zip; `npm i && npm run dev` succeeds; smoke test journey."
@@ -175,7 +185,7 @@
         "title": "E2E tests: build → export → run",
         "description": "Playwright tests covering a branched journey from studio to exported kit.",
         "status": "pending",
-        "dependencies": [16, 12, 13, 14],
+        "dependencies": [17, 13, 14, 15],
         "priority": "high",
         "details": "Script: create project JSON, open studio, export, run the kit, follow journey, assert branching and validation.",
         "testStrategy": "CI green on Linux/Windows/macOS; flake rate <1% across 10 runs."
@@ -195,7 +205,7 @@
         "title": "Asset handling",
         "description": "Upload and reference images/files; copy to export.",
         "status": "pending",
-        "dependencies": [8, 10],
+        "dependencies": [9, 11],
         "priority": "low",
         "details": "Store under projects/{slug}/assets; map to `/public` in exported kit; update views to reference paths.",
         "testStrategy": "Uploaded image appears in preview and works after export."

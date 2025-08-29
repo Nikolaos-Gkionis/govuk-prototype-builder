@@ -153,6 +153,13 @@ export function PageNode({
               src={config.icon} 
               alt={`${page.type} icon`}
               className="w-8 h-8"
+              onError={(e) => {
+                console.error(`Failed to load icon: ${config.icon}`);
+                console.error('Image error:', e);
+              }}
+              onLoad={() => {
+                console.log(`Successfully loaded icon: ${config.icon}`);
+              }}
             />
             <span className="text-white text-xs font-medium uppercase tracking-wide">
               {page.type}
