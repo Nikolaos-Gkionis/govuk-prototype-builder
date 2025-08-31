@@ -16,7 +16,9 @@ import {
   ConnectionLineType,
   Panel,
   ReactFlowProvider,
-  XYPosition
+  XYPosition,
+  Handle,
+  Position
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -55,7 +57,7 @@ interface ReactFlowJourneyEditorProps {
 }
 
 // Custom node types for different page types
-const CustomNode = ({ data }: { data: any }) => {
+const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: boolean }) => {
   const getNodeBorderColor = (pageType: string) => {
     switch (pageType) {
       case 'start': return 'border-green-500';
@@ -79,7 +81,13 @@ const CustomNode = ({ data }: { data: any }) => {
   };
 
   return (
-    <div className={`px-4 py-3 shadow-lg rounded-lg border-2 bg-white min-w-[180px] ${getNodeBorderColor(data.pageType)}`}>
+    <div className={`px-4 py-3 shadow-lg rounded-lg border-2 bg-white min-w-[180px] relative ${getNodeBorderColor(data.pageType)} ${selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}>
+      {/* React Flow connection handles */}
+      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-blue-500" />
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
+      <Handle type="source" position={Position.Left} className="w-3 h-3 bg-blue-500" />
+      
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 flex items-center justify-center">
           <img 
@@ -210,6 +218,8 @@ export default function ReactFlowJourneyEditor({
     };
   }, [setNodes]);
 
+
+
   // Handle new connections
   const onConnect = useCallback(
     (params: Connection) => {
@@ -228,6 +238,10 @@ export default function ReactFlowJourneyEditor({
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
   }, []);
+
+
+
+
 
 
 
@@ -318,10 +332,10 @@ export default function ReactFlowJourneyEditor({
             connectionLineType={ConnectionLineType.SmoothStep}
             fitView
             attributionPosition="bottom-left"
-            className="bg-gray-50"
+            className={`bg-gray-50 ${selectedNode ? 'cursor-crosshair' : ''}`}
           >
-            {/* Canvas Controls */}
-            <Controls />
+                      {/* Canvas Controls - Hide when a page is selected to allow connections */}
+          {!selectedNode && <Controls />}
             <Background color="#aaa" gap={16} />
             <MiniMap 
               style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
@@ -344,6 +358,7 @@ export default function ReactFlowJourneyEditor({
               <div className="text-xs text-gray-500 mt-2">
                 Pages: {nodes.length} | Connections: {edges.length}
               </div>
+
             </Panel>
           </ReactFlow>
         </ReactFlowProvider>
@@ -352,18 +367,18 @@ export default function ReactFlowJourneyEditor({
       {/* Bottom Toolbar - Hovering at bottom */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-6 py-3 hover:shadow-xl transition-shadow duration-200">
-          <div className="flex items-center gap-4">
-            {/* Connection Tool */}
-            <button
-              title="Add Connection"
-              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </button>
-            
-            {/* Conditional Logic Tool */}
+                      <div className="flex items-center gap-4">
+              {/* Connection Tool */}
+              <button
+                title="Add Connection"
+                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </button>
+              
+              {/* Conditional Logic Tool */}
             <button
               title="Add Conditional Logic"
               className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
