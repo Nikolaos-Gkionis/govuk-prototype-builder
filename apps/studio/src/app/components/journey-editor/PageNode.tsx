@@ -149,18 +149,31 @@ export function PageNode({
         {/* Header */}
         <div className="h-12 rounded-t-lg bg-gray-800 flex items-center justify-between px-3">
           <div className="flex items-center gap-3">
-            <img 
-              src={config.icon} 
-              alt={`${page.type} icon`}
-              className="w-8 h-8"
-              onError={(e) => {
-                console.error(`Failed to load icon: ${config.icon}`);
-                console.error('Image error:', e);
-              }}
-              onLoad={() => {
-                console.log(`Successfully loaded icon: ${config.icon}`);
-              }}
-            />
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img 
+                src={config.icon} 
+                alt={`${page.type} icon`}
+                className="w-8 h-8"
+                onError={(e) => {
+                  console.error(`Failed to load icon: ${config.icon}`);
+                  // Show fallback icon when SVG fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+                onLoad={() => {
+                  console.log(`Successfully loaded icon: ${config.icon}`);
+                }}
+              />
+              {/* Fallback icon when SVG fails to load */}
+              <div 
+                className="w-8 h-8 bg-white rounded flex items-center justify-center text-gray-800 font-bold text-sm hidden"
+                style={{ display: 'none' }}
+              >
+                {page.type.charAt(0).toUpperCase()}
+              </div>
+            </div>
             <span className="text-white text-xs font-medium uppercase tracking-wide">
               {page.type}
             </span>

@@ -149,6 +149,31 @@ export default function JourneyCanvas({
 
 
 
+  // Save pages to localStorage whenever they change
+  useEffect(() => {
+    if (projectId && pages.length > 0) {
+      const existingProjects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
+      const updatedProjects = existingProjects.map((p: any) => {
+        if (p.id === projectId) {
+          return { ...p, pages, connections: pages.flatMap(page => page.connections) };
+        }
+        return p;
+      });
+      localStorage.setItem('govuk-prototypes', JSON.stringify(updatedProjects));
+    }
+  }, [pages, projectId]);
+
+  // Load pages from localStorage on component mount
+  useEffect(() => {
+    if (projectId) {
+      const existingProjects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
+      const foundProject = existingProjects.find((p: any) => p.id === projectId);
+      if (foundProject && foundProject.pages) {
+        setPages(foundProject.pages);
+      }
+    }
+  }, [projectId]);
+
   // Handle page creation from drag and drop
   const handlePageDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /* Import GOV.UK Frontend styles for component previews */
-@import "govuk-frontend/dist/govuk/govuk-frontend.min.css";
+/* Temporarily disabled to isolate CSS issues */
+/* @import "govuk-frontend/dist/govuk/govuk-frontend.css"; */
 
 /* GOV.UK Component Preview Container Styles */
 .govuk-preview-container {
