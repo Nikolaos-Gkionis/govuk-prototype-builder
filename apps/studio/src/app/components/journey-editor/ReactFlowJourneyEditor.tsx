@@ -22,6 +22,23 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+// Custom styles for thicker crosshair and connection lines
+const customStyles = `
+  .react-flow__pane.cursor-crosshair {
+    cursor: crosshair !important;
+  }
+  
+  .react-flow__connection-line {
+    stroke-width: 3px !important;
+    stroke: #3b82f6 !important;
+  }
+  
+  .react-flow__edge-path {
+    stroke-width: 3px !important;
+    stroke: #3b82f6 !important;
+  }
+`;
+
 // Import existing components for now
 import { PagePalette } from './PagePalette';
 
@@ -310,6 +327,8 @@ export default function ReactFlowJourneyEditor({
 
   return (
     <div className="flex h-full bg-gray-50">
+      {/* Inject custom styles for thicker crosshair and connection lines */}
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
       {/* Left Sidebar - Page Palette */}
       {showPagePalette && (
         <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
@@ -333,6 +352,7 @@ export default function ReactFlowJourneyEditor({
             fitView
             attributionPosition="bottom-left"
             className={`bg-gray-50 ${selectedNode ? 'cursor-crosshair' : ''}`}
+            connectionLineStyle={{ strokeWidth: 3, stroke: '#3b82f6' }}
           >
                       {/* Canvas Controls - Hide when a page is selected to allow connections */}
           {!selectedNode && <Controls />}
