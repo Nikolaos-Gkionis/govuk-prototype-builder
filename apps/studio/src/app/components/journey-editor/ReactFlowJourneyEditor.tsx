@@ -99,11 +99,11 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
 
   return (
     <div className={`px-4 py-3 shadow-lg rounded-lg border-2 bg-white min-w-[180px] relative ${getNodeBorderColor(data.pageType)} ${selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}>
-      {/* React Flow connection handles */}
-      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-blue-500" />
+      {/* React Flow connection handles - Natural flow direction */}
+      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-green-500" />
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
       <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
       <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
-      <Handle type="source" position={Position.Left} className="w-3 h-3 bg-blue-500" />
       
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 flex items-center justify-center">
@@ -378,7 +378,21 @@ export default function ReactFlowJourneyEditor({
               <div className="text-xs text-gray-500 mt-2">
                 Pages: {nodes.length} | Connections: {edges.length}
               </div>
-
+              
+              {/* Connection Legend */}
+              <div className="mt-3 pt-2 border-t border-gray-200">
+                <div className="text-xs text-gray-600 mb-1">Connection Handles:</div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-500">Input</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-500">Output</span>
+                  </div>
+                </div>
+              </div>
             </Panel>
           </ReactFlow>
         </ReactFlowProvider>
