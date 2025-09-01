@@ -79,8 +79,8 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
     switch (pageType) {
       case 'start': return 'border-green-500';
       case 'content': return 'border-blue-500';
-      case 'question': return 'border-purple-500';
-      case 'check-answers': return 'border-yellow-500';
+      case 'question': return 'border-yellow-500';
+      case 'check-answers': return 'border-purple-500';
       case 'confirmation': return 'border-green-600';
       default: return 'border-gray-500';
     }
@@ -100,10 +100,30 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
   return (
     <div className={`px-4 py-3 shadow-lg rounded-lg border-2 bg-white min-w-[180px] relative ${getNodeBorderColor(data.pageType)} ${selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}>
       {/* React Flow connection handles - Natural flow direction */}
-      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-green-500" />
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-green-500" />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        className="w-5 h-5" 
+        style={{ backgroundColor: '#10b981', border: '1px solid white' }}
+      />
+      <Handle 
+        type="target" 
+        position={Position.Left} 
+        className="w-5 h-5" 
+        style={{ backgroundColor: '#10b981', border: '1px solid white' }}
+      />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
+        className="w-5 h-5" 
+        style={{ backgroundColor: '#3b82f6', border: '1px solid white' }}
+      />
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        className="w-5 h-5" 
+        style={{ backgroundColor: '#3b82f6', border: '1px solid white' }}
+      />
       
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 flex items-center justify-center">
