@@ -41,6 +41,8 @@ const customStyles = `
 
 // Import existing components for now
 import { PagePalette } from './PagePalette';
+import { PageCarousel } from './PageCarousel';
+import { PageEditor } from './PageEditor';
 
 // Types for our journey editor
 interface JourneyPage {
@@ -74,7 +76,7 @@ interface ReactFlowJourneyEditorProps {
 }
 
 // Custom node types for different page types
-const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: boolean }) => {
+const CustomNode = ({ data, id, selected, onEdit }: { data: any; id: string; selected?: boolean; onEdit?: (nodeId: string) => void }) => {
   const getNodeBorderColor = (pageType: string) => {
     switch (pageType) {
       case 'start': return 'border-green-500';
@@ -156,13 +158,30 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
           {data.description}
         </div>
       )}
+      
+      {/* Edit Button - Only show when node is selected */}
+      {selected && (
+        <button
+          className="absolute -top-2 -right-2 bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg"
+          title="Edit Page"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent node selection toggle
+            onEdit?.(id); // Call the edit callback with the node ID
+          }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };
 
-const nodeTypes: NodeTypes = {
-  custom: CustomNode,
-};
+// Create node types with edit callback
+const createNodeTypes = (onEdit: (nodeId: string) => void): NodeTypes => ({
+  custom: (props: any) => <CustomNode {...props} onEdit={onEdit} />,
+});
 
 export default function ReactFlowJourneyEditor({
   projectId,
@@ -176,6 +195,10 @@ export default function ReactFlowJourneyEditor({
   // @ts-ignore - React Flow type inference issue
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  
+  // Page Edit Mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
 
   // Initialize with a start page if no pages exist
   useMemo(() => {
@@ -298,6 +321,40 @@ export default function ReactFlowJourneyEditor({
     setNodes((nds: any) => [...nds, newNode]);
   }, [setNodes]);
 
+  // Handle editing a page
+  const handleEditPage = useCallback((nodeId: string) => {
+    console.log('Edit page:', nodeId);
+    setEditingPageId(nodeId);
+    setIsEditMode(true);
+    setSelectedNode(null); // Clear selection when entering edit mode
+  }, []);
+
+  // Return to journey editor mode
+  const handleBackToJourney = useCallback(() => {
+    setIsEditMode(false);
+    setEditingPageId(null);
+  }, []);
+
+  // Handle saving page data
+  const handleSavePage = useCallback((pageData: any) => {
+    // Update the node data with the new page content
+    setNodes((nds: any) => 
+      nds.map((node: any) => 
+        node.id === editingPageId 
+          ? { ...node, data: { ...node.data, ...pageData } }
+          : node
+      )
+    );
+    
+    // Show success message (you could add a toast notification here)
+    console.log('Page saved successfully');
+  }, [editingPageId, setNodes]);
+
+  // Handle selecting a different page in edit mode
+  const handlePageSelect = useCallback((pageId: string) => {
+    setEditingPageId(pageId);
+  }, []);
+
   // Delete selected node
   const deleteSelectedNode = useCallback(() => {
     if (selectedNode) {
@@ -349,130 +406,153 @@ export default function ReactFlowJourneyEditor({
     <div className="flex h-full bg-gray-50">
       {/* Inject custom styles for thicker crosshair and connection lines */}
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-      {/* Left Sidebar - Page Palette */}
-      {showPagePalette && (
-        <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
-          <PagePalette onAddPage={handleAddPage} onHide={() => setShowPagePalette(false)} />
-        </div>
-      )}
-
-      {/* Main Canvas Area */}
-      <div className="flex-1 relative">
-        <ReactFlowProvider>
-          <ReactFlow
+      
+      {isEditMode ? (
+        // Page Edit Mode
+        <div className="flex flex-col w-full">
+          {/* Page Carousel at top */}
+          <PageCarousel 
             nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            nodeTypes={nodeTypes}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            fitView
-            attributionPosition="bottom-left"
-            className={`bg-gray-50 ${selectedNode ? 'cursor-crosshair' : ''}`}
-            connectionLineStyle={{ strokeWidth: 3, stroke: '#3b82f6' }}
-          >
-                      {/* Canvas Controls - Hide when a page is selected to allow connections */}
-          {!selectedNode && <Controls />}
-            <Background color="#aaa" gap={16} />
-            <MiniMap 
-              style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
-              nodeColor={(node: any) => {
-                const colors: { [key: string]: string } = {
-                  start: '#10b981',
-                  content: '#3b82f6',
-                  question: '#f59e0b',
-                  'check-answers': '#8b5cf6',
-                  confirmation: '#059669'
-                };
-                return colors[node.data?.pageType] || '#6b7280';
-              }}
-            />
-
-            {/* Project Info Panel */}
-            <Panel position="top-right" className="bg-white rounded-lg shadow-lg p-3 m-4 max-w-xs">
-              <h2 className="font-semibold text-gray-900 mb-1 text-sm">{projectName}</h2>
-              <p className="text-xs text-gray-600">{projectDescription}</p>
-              <div className="text-xs text-gray-500 mt-2">
-                Pages: {nodes.length} | Connections: {edges.length}
-              </div>
-              
-              {/* Connection Legend */}
-              <div className="mt-3 pt-2 border-t border-gray-200">
-                <div className="text-xs text-gray-600 mb-1">Connection Handles:</div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-500">Input</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="text-gray-500">Output</span>
-                  </div>
-                </div>
-              </div>
-            </Panel>
-          </ReactFlow>
-        </ReactFlowProvider>
-      </div>
-
-      {/* Bottom Toolbar - Hovering at bottom */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-6 py-3 hover:shadow-xl transition-shadow duration-200">
-                      <div className="flex items-center gap-4">
-              {/* Connection Tool */}
-              <button
-                title="Add Connection"
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </button>
-              
-              {/* Conditional Logic Tool */}
-            <button
-              title="Add Conditional Logic"
-              className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </button>
-            
-            {/* Divider */}
-            <div className="w-px h-6 bg-gray-300"></div>
-            
-            {/* Show/Hide Palette */}
-            <button
-              onClick={() => setShowPagePalette(!showPagePalette)}
-              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition-colors"
-            >
-              {showPagePalette ? 'Hide' : 'Show'} Palette
-            </button>
-            
-            {/* Save Button */}
-            <button
-              onClick={handleSave}
-              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition-colors"
-            >
-              Save
-            </button>
-            
-            {/* Delete Button - Only show when node is selected */}
-            {selectedNode && (
-              <button
-                onClick={deleteSelectedNode}
-                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm transition-colors"
-              >
-                Delete
-              </button>
-            )}
-          </div>
+            editingPageId={editingPageId}
+            onPageSelect={handlePageSelect}
+            onBackToJourney={handleBackToJourney}
+          />
+          
+          {/* Page Editor */}
+          <PageEditor 
+            node={nodes.find((n: any) => n.id === editingPageId) || null}
+            onSave={handleSavePage}
+          />
         </div>
-      </div>
+      ) : (
+        // Journey Editor Mode
+        <>
+          {/* Left Sidebar - Page Palette */}
+          {showPagePalette && (
+            <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
+              <PagePalette onAddPage={handleAddPage} onHide={() => setShowPagePalette(false)} />
+            </div>
+          )}
+
+          {/* Main Canvas Area */}
+          <div className="flex-1 relative">
+            <ReactFlowProvider>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onPaneClick={onPaneClick}
+                nodeTypes={createNodeTypes(handleEditPage)}
+                connectionLineType={ConnectionLineType.SmoothStep}
+                fitView
+                attributionPosition="bottom-left"
+                className={`bg-gray-50 ${selectedNode ? 'cursor-crosshair' : ''}`}
+                connectionLineStyle={{ strokeWidth: 3, stroke: '#3b82f6' }}
+              >
+                {/* Canvas Controls - Hide when a page is selected to allow connections */}
+                {!selectedNode && <Controls />}
+                <Background color="#aaa" gap={16} />
+                <MiniMap 
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
+                  nodeColor={(node: any) => {
+                    const colors: { [key: string]: string } = {
+                      start: '#10b981',
+                      content: '#3b82f6',
+                      question: '#f59e0b',
+                      'check-answers': '#8b5cf6',
+                      confirmation: '#059669'
+                    };
+                    return colors[node.data?.pageType] || '#6b7280';
+                  }}
+                />
+
+                {/* Project Info Panel */}
+                <Panel position="top-right" className="bg-white rounded-lg shadow-lg p-3 m-4 max-w-xs">
+                  <h2 className="font-semibold text-gray-900 mb-1 text-sm">{projectName}</h2>
+                  <p className="text-xs text-gray-600">{projectDescription}</p>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Pages: {nodes.length} | Connections: {edges.length}
+                  </div>
+                  
+                  {/* Connection Legend */}
+                  <div className="mt-3 pt-2 border-t border-gray-200">
+                    <div className="text-xs text-gray-600 mb-1">Connection Handles:</div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-gray-500">Input</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-gray-500">Output</span>
+                      </div>
+                    </div>
+                  </div>
+                </Panel>
+              </ReactFlow>
+            </ReactFlowProvider>
+          </div>
+
+          {/* Bottom Toolbar - Hovering at bottom */}
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-6 py-3 hover:shadow-xl transition-shadow duration-200">
+              <div className="flex items-center gap-4">
+                {/* Connection Tool */}
+                <button
+                  title="Add Connection"
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </button>
+                
+                {/* Conditional Logic Tool */}
+                <button
+                  title="Add Conditional Logic"
+                  className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </button>
+                
+                {/* Divider */}
+                <div className="w-px h-6 bg-gray-300"></div>
+                
+                {/* Show/Hide Palette */}
+                <button
+                  onClick={() => setShowPagePalette(!showPagePalette)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm transition-colors"
+                >
+                  {showPagePalette ? 'Hide' : 'Show'} Palette
+                </button>
+                
+                {/* Save Button */}
+                <button
+                  onClick={handleSave}
+                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition-colors"
+                >
+                  Save
+                </button>
+                
+                {/* Delete Button - Only show when node is selected */}
+                {selectedNode && (
+                  <button
+                    onClick={deleteSelectedNode}
+                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
