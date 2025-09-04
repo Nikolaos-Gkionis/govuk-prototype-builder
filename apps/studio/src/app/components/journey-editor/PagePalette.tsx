@@ -66,13 +66,7 @@ export function PagePalette({ onAddPage, onHide }: PagePaletteProps) {
     });
   };
 
-  const handleDragStart = (e: React.DragEvent, pageType: PageType) => {
-    e.dataTransfer.setData('application/reactflow', JSON.stringify({
-      type: 'page',
-      pageType: pageType
-    }));
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  // Removed drag functionality - using click only
 
   return (
     <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
@@ -80,7 +74,7 @@ export function PagePalette({ onAddPage, onHide }: PagePaletteProps) {
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">Page Types</h2>
         <p className="text-xs text-gray-600">
-          Drag page types onto the canvas or click to add them
+          Click to add pages to the canvas
         </p>
       </div>
 
@@ -90,8 +84,6 @@ export function PagePalette({ onAddPage, onHide }: PagePaletteProps) {
           {pageTypes.map((pageType) => (
             <div
               key={pageType.type}
-              draggable
-              onDragStart={(e) => handleDragStart(e, pageType.type)}
               onClick={() => handleAddPage(pageType.type)}
               className="group cursor-pointer hover:bg-gray-100 active:bg-gray-200 transition-all duration-200"
             >

@@ -2,19 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { Node } from '@xyflow/react';
+import { PagePreview } from './PagePreview';
+import { PageTemplates } from './PageTemplates';
+import { validateForm, ValidationError, getFieldValidationMessage, COMMON_VALIDATIONS } from './validation';
 
 interface PageEditorProps {
   node: Node | null;
   onSave: (pageData: any) => void;
+  editingPageId?: string | null;
 }
 
-export function PageEditor({ node, onSave }: PageEditorProps) {
+export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     content: '',
     fields: [] as any[]
   });
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [showValidation, setShowValidation] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Initialize form data when node changes
   useEffect(() => {
@@ -25,8 +35,12 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
         content: (node.data.content as string) || '',
         fields: (node.data.fields as any[]) || []
       });
+      // Reset validation and success states when switching pages
+      setValidationErrors([]);
+      setShowValidation(false);
+      setSaveSuccess(false);
     }
-  }, [node]);
+  }, [node, editingPageId]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -41,7 +55,15 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
       type: 'text',
       label: '',
       hint: '',
-      required: false
+      required: false,
+      validation: {
+        minLength: undefined,
+        maxLength: undefined,
+        pattern: undefined,
+        min: undefined,
+        max: undefined
+      },
+      options: [] // For radio buttons, checkboxes, and select fields
     };
     setFormData(prev => ({
       ...prev,
@@ -65,14 +87,117 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
     }));
   };
 
-  const handleSave = () => {
-    onSave({
-      ...node?.data,
-      label: formData.title,
-      description: formData.description,
-      content: formData.content,
-      fields: formData.fields
-    });
+  const addFieldOption = (fieldIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      fields: prev.fields.map((f, i) => 
+        i === fieldIndex 
+          ? { ...f, options: [...(f.options || []), { value: '', text: '' }] }
+          : f
+      )
+    }));
+  };
+
+  const updateFieldOption = (fieldIndex: number, optionIndex: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      fields: prev.fields.map((f, i) => 
+        i === fieldIndex 
+          ? { 
+              ...f, 
+              options: f.options?.map((opt: any, optIdx: number) => 
+                optIdx === optionIndex ? { ...opt, [field]: value } : opt
+              ) || []
+            }
+          : f
+      )
+    }));
+  };
+
+  const removeFieldOption = (fieldIndex: number, optionIndex: number) => {
+    setFormData(prev => ({
+      ...prev,
+      fields: prev.fields.map((f, i) => 
+        i === fieldIndex 
+          ? { ...f, options: f.options?.filter((_: any, optIdx: number) => optIdx !== optionIndex) || [] }
+          : f
+      )
+    }));
+  };
+
+  const validateCurrentForm = () => {
+    // Only validate fields that have labels (to avoid validating empty template fields)
+    const fieldsToValidate = formData.fields.filter(field => field.label && field.label.trim() !== '');
+    const errors = validateForm(fieldsToValidate, {});
+    setValidationErrors(errors);
+    setShowValidation(true);
+    return errors.length === 0;
+  };
+
+  const applyValidationPreset = (fieldIndex: number, preset: string) => {
+    const presets: { [key: string]: any } = {
+      name: COMMON_VALIDATIONS.NAME,
+      email: COMMON_VALIDATIONS.EMAIL,
+      phone: COMMON_VALIDATIONS.PHONE,
+      postcode: COMMON_VALIDATIONS.POSTCODE,
+      nationalInsurance: COMMON_VALIDATIONS.NATIONAL_INSURANCE
+    };
+
+    if (presets[preset]) {
+      updateField(fieldIndex, 'validation', presets[preset]);
+    }
+  };
+
+  const applyTemplate = (template: any) => {
+    setFormData(prev => ({
+      ...prev,
+      title: template.name,
+      description: template.description,
+      content: template.content,
+      fields: template.fields.map((field: any, index: number) => ({
+        ...field,
+        id: `field-${Date.now()}-${index}` // Generate new unique IDs
+      }))
+    }));
+    setShowTemplates(false);
+    setShowValidation(false); // Clear any existing validation errors
+  };
+
+  const handleSave = async () => {
+    // Basic validation - only check if title is provided
+    if (!formData.title || formData.title.trim() === '') {
+      setValidationErrors([{
+        field: 'title',
+        message: 'Page title is required',
+        type: 'required'
+      }]);
+      setShowValidation(true);
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveSuccess(false);
+    
+    try {
+      // Simulate save delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      onSave({
+        ...node?.data,
+        label: formData.title,
+        description: formData.description,
+        content: formData.content,
+        fields: formData.fields
+      });
+      
+      setSaveSuccess(true);
+      setShowValidation(false); // Clear validation errors on successful save
+      setTimeout(() => setSaveSuccess(false), 3000); // Hide success message after 3 seconds
+    } catch (error) {
+      console.error('Error saving page:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!node) {
@@ -82,6 +207,25 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
           <p>Select a page to edit</p>
         </div>
       </div>
+    );
+  }
+
+  // Show preview mode if enabled
+  if (isPreviewMode) {
+    return (
+      <PagePreview 
+        node={{
+          ...node,
+          data: {
+            ...node.data,
+            label: formData.title,
+            description: formData.description,
+            content: formData.content,
+            fields: formData.fields
+          }
+        }}
+        onClose={() => setIsPreviewMode(false)}
+      />
     );
   }
 
@@ -143,12 +287,20 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Form Fields</h2>
-            <button
-              onClick={addField}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Add Field
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                Use Template
+              </button>
+              <button
+                onClick={addField}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Add Field
+              </button>
+            </div>
           </div>
 
           {formData.fields.length === 0 ? (
@@ -157,10 +309,11 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
               <p className="text-sm">Click "Add Field" to start building your form.</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {formData.fields.map((field, index) => (
-                <div key={field.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div key={field.id} className="border border-gray-200 rounded-lg p-6">
+                  {/* Basic Field Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Field Type
@@ -172,8 +325,14 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
                       >
                         <option value="text">Text Input</option>
                         <option value="textarea">Text Area</option>
+                        <option value="email">Email Input</option>
+                        <option value="number">Number Input</option>
+                        <option value="tel">Telephone Input</option>
+                        <option value="url">URL Input</option>
+                        <option value="password">Password Input</option>
                         <option value="radios">Radio Buttons</option>
                         <option value="checkboxes">Checkboxes</option>
+                        <option value="select">Select Dropdown</option>
                         <option value="date">Date Input</option>
                         <option value="file">File Upload</option>
                       </select>
@@ -205,8 +364,173 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
                       />
                     </div>
                   </div>
+
+                  {/* Field Options - Only show for radio, checkbox, and select fields */}
+                  {(field.type === 'radios' || field.type === 'checkboxes' || field.type === 'select') && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Field Options
+                        </label>
+                        <button
+                          onClick={() => addFieldOption(index)}
+                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                        >
+                          Add Option
+                        </button>
+                      </div>
+                      
+                      {field.options && field.options.length > 0 ? (
+                        <div className="space-y-2">
+                          {field.options.map((option: any, optionIndex: number) => (
+                            <div key={optionIndex} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={option.value}
+                                  onChange={(e) => updateFieldOption(index, optionIndex, 'value', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Option value"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={option.text}
+                                  onChange={(e) => updateFieldOption(index, optionIndex, 'text', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Option text"
+                                />
+                              </div>
+                              <button
+                                onClick={() => removeFieldOption(index, optionIndex)}
+                                className="px-2 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500 text-sm">
+                          No options added yet. Click "Add Option" to create choices.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Validation Rules */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Validation Rules
+                      </label>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            applyValidationPreset(index, e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Apply preset...</option>
+                        <option value="name">Name validation</option>
+                        <option value="email">Email validation</option>
+                        <option value="phone">UK Phone validation</option>
+                        <option value="postcode">UK Postcode validation</option>
+                        <option value="nationalInsurance">National Insurance validation</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(field.type === 'text' || field.type === 'textarea' || field.type === 'email' || field.type === 'tel' || field.type === 'url' || field.type === 'password') && (
+                        <>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Minimum Length</label>
+                            <input
+                              type="number"
+                              value={field.validation?.minLength || ''}
+                              onChange={(e) => updateField(index, 'validation', { ...field.validation, minLength: e.target.value ? parseInt(e.target.value) : undefined })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Min length"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Maximum Length</label>
+                            <input
+                              type="number"
+                              value={field.validation?.maxLength || ''}
+                              onChange={(e) => updateField(index, 'validation', { ...field.validation, maxLength: e.target.value ? parseInt(e.target.value) : undefined })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Max length"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {field.type === 'number' && (
+                        <>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Minimum Value</label>
+                            <input
+                              type="number"
+                              value={field.validation?.min || ''}
+                              onChange={(e) => updateField(index, 'validation', { ...field.validation, min: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Min value"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Maximum Value</label>
+                            <input
+                              type="number"
+                              value={field.validation?.max || ''}
+                              onChange={(e) => updateField(index, 'validation', { ...field.validation, max: e.target.value ? parseFloat(e.target.value) : undefined })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Max value"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {(field.type === 'text' || field.type === 'email' || field.type === 'tel' || field.type === 'url') && (
+                        <div className="md:col-span-2">
+                          <label className="block text-xs text-gray-600 mb-1">Pattern (Regex)</label>
+                          <input
+                            type="text"
+                            value={field.validation?.pattern || ''}
+                            onChange={(e) => updateField(index, 'validation', { ...field.validation, pattern: e.target.value || undefined })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., ^[0-9]{10}$ for 10 digits"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   
-                  <div className="flex items-center justify-between mt-4">
+                  {/* Validation Hint */}
+                  {field.validation && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start">
+                        <svg className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="text-sm text-blue-800">
+                          <div className="font-medium mb-1">Validation Rules:</div>
+                          <div className="space-y-1">
+                            {field.required && <div>• Required field</div>}
+                            {field.validation.minLength && <div>• Minimum {field.validation.minLength} characters</div>}
+                            {field.validation.maxLength && <div>• Maximum {field.validation.maxLength} characters</div>}
+                            {field.validation.pattern && <div>• Must match pattern: {field.validation.pattern}</div>}
+                            {field.validation.min !== undefined && <div>• Minimum value: {field.validation.min}</div>}
+                            {field.validation.max !== undefined && <div>• Maximum value: {field.validation.max}</div>}
+                            {field.validation.customMessage && <div>• Custom message: {field.validation.customMessage}</div>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Field Actions */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
@@ -221,7 +545,7 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
                       onClick={() => removeField(index)}
                       className="px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
                     >
-                      Remove
+                      Remove Field
                     </button>
                   </div>
                 </div>
@@ -230,16 +554,99 @@ export function PageEditor({ node, onSave }: PageEditorProps) {
           )}
         </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
+        {/* Validation Summary */}
+        {showValidation && validationErrors.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center mb-2">
+              <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <h3 className="text-sm font-medium text-red-800">Validation Errors</h3>
+            </div>
+            <ul className="text-sm text-red-700 space-y-1">
+              {validationErrors.map((error, errorIndex) => (
+                <li key={errorIndex} className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>{error.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Validation Success */}
+        {showValidation && validationErrors.length === 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-medium text-green-800">All validation rules are valid</span>
+            </div>
+          </div>
+        )}
+
+        {/* Save Success */}
+        {saveSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-medium text-green-800">Page saved successfully!</span>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex justify-between">
+          <div className="flex gap-3">
+            <button
+              onClick={() => setIsPreviewMode(true)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Preview Page
+            </button>
+            
+            <button
+              onClick={validateCurrentForm}
+              className="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+            >
+              Validate Form
+            </button>
+          </div>
+          
           <button
             onClick={handleSave}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            disabled={isSaving}
+            className={`px-6 py-3 rounded-lg transition-colors font-medium flex items-center gap-2 ${
+              isSaving 
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
           >
-            Save Changes
+            {isSaving ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </div>
+
+      {/* Page Templates Modal */}
+      {showTemplates && (
+        <PageTemplates
+          onApplyTemplate={applyTemplate}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
     </div>
   );
 }

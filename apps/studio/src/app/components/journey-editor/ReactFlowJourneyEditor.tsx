@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Node,
@@ -75,8 +75,11 @@ interface ReactFlowJourneyEditorProps {
   startType: 'blank' | 'template';
 }
 
+// Global ref to store the edit function
+let globalEditFunction: ((nodeId: string) => void) | null = null;
+
 // Custom node types for different page types
-const CustomNode = ({ data, id, selected, onEdit }: { data: any; id: string; selected?: boolean; onEdit?: (nodeId: string) => void }) => {
+const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: boolean }) => {
   const getNodeBorderColor = (pageType: string) => {
     switch (pageType) {
       case 'start': return 'border-green-500';
@@ -166,7 +169,7 @@ const CustomNode = ({ data, id, selected, onEdit }: { data: any; id: string; sel
           title="Edit Page"
           onClick={(e) => {
             e.stopPropagation(); // Prevent node selection toggle
-            onEdit?.(id); // Call the edit callback with the node ID
+            globalEditFunction?.(id); // Call the global edit function
           }}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,10 +181,10 @@ const CustomNode = ({ data, id, selected, onEdit }: { data: any; id: string; sel
   );
 };
 
-// Create node types with edit callback
-const createNodeTypes = (onEdit: (nodeId: string) => void): NodeTypes => ({
-  custom: (props: any) => <CustomNode {...props} onEdit={onEdit} />,
-});
+// Create a stable node types object
+const nodeTypes: NodeTypes = {
+  custom: CustomNode,
+};
 
 export default function ReactFlowJourneyEditor({
   projectId,
@@ -199,6 +202,7 @@ export default function ReactFlowJourneyEditor({
   // Page Edit Mode state
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [currentEditingNode, setCurrentEditingNode] = useState<any>(null);
 
   // Initialize with a start page if no pages exist
   useMemo(() => {
@@ -218,65 +222,7 @@ export default function ReactFlowJourneyEditor({
     }
   }, [nodes.length, setNodes]);
 
-  // Add drag and drop event listeners to ReactFlow pane
-  useEffect(() => {
-    const reactFlowPane = document.querySelector('.react-flow__pane');
-    if (!reactFlowPane) return;
-
-    const handleDragOver = (event: Event) => {
-      event.preventDefault();
-      const dragEvent = event as DragEvent;
-      if (dragEvent.dataTransfer) {
-        dragEvent.dataTransfer.dropEffect = 'move';
-      }
-    };
-
-    const handleDrop = (event: Event) => {
-      event.preventDefault();
-      const dragEvent = event as DragEvent;
-      if (!dragEvent.dataTransfer) return;
-
-      const reactFlowBounds = document.querySelector('.react-flow')?.getBoundingClientRect();
-      if (!reactFlowBounds) return;
-
-      const data = dragEvent.dataTransfer.getData('application/reactflow');
-      if (!data) return;
-
-      try {
-        const { type, pageType } = JSON.parse(data);
-        if (type === 'page' && pageType) {
-          const position = {
-            x: dragEvent.clientX - reactFlowBounds.left,
-            y: dragEvent.clientY - reactFlowBounds.top,
-          };
-
-          const newNode = {
-            id: `${pageType}-${Date.now()}`,
-            type: 'custom',
-            position,
-            data: {
-              label: `New ${pageType}`,
-              pageType,
-              description: `Add your ${pageType} content here`
-            }
-          };
-
-          // @ts-ignore - React Flow type inference issue
-          setNodes((nds: any) => [...nds, newNode]);
-        }
-      } catch (error) {
-        console.error('Error parsing drop data:', error);
-      }
-    };
-
-    reactFlowPane.addEventListener('dragover', handleDragOver);
-    reactFlowPane.addEventListener('drop', handleDrop);
-
-    return () => {
-      reactFlowPane.removeEventListener('dragover', handleDragOver);
-      reactFlowPane.removeEventListener('drop', handleDrop);
-    };
-  }, [setNodes]);
+  // Removed drag and drop functionality - using click only
 
 
 
@@ -324,15 +270,18 @@ export default function ReactFlowJourneyEditor({
   // Handle editing a page
   const handleEditPage = useCallback((nodeId: string) => {
     console.log('Edit page:', nodeId);
+    const nodeToEdit = nodes.find((n: any) => n.id === nodeId);
     setEditingPageId(nodeId);
+    setCurrentEditingNode(nodeToEdit);
     setIsEditMode(true);
     setSelectedNode(null); // Clear selection when entering edit mode
-  }, []);
+  }, [nodes]);
 
   // Return to journey editor mode
   const handleBackToJourney = useCallback(() => {
     setIsEditMode(false);
     setEditingPageId(null);
+    setCurrentEditingNode(null);
   }, []);
 
   // Handle saving page data
@@ -346,14 +295,29 @@ export default function ReactFlowJourneyEditor({
       )
     );
     
+    // Update the current editing node with the new data
+    if (currentEditingNode) {
+      setCurrentEditingNode({
+        ...currentEditingNode,
+        data: { ...currentEditingNode.data, ...pageData }
+      });
+    }
+    
     // Show success message (you could add a toast notification here)
     console.log('Page saved successfully');
-  }, [editingPageId, setNodes]);
+  }, [editingPageId, setNodes, currentEditingNode]);
 
   // Handle selecting a different page in edit mode
   const handlePageSelect = useCallback((pageId: string) => {
+    const nodeToEdit = nodes.find((n: any) => n.id === pageId);
     setEditingPageId(pageId);
-  }, []);
+    setCurrentEditingNode(nodeToEdit);
+  }, [nodes]);
+
+  // Set the global edit function
+  useEffect(() => {
+    globalEditFunction = handleEditPage;
+  }, [handleEditPage]);
 
   // Delete selected node
   const deleteSelectedNode = useCallback(() => {
@@ -420,8 +384,9 @@ export default function ReactFlowJourneyEditor({
           
           {/* Page Editor */}
           <PageEditor 
-            node={nodes.find((n: any) => n.id === editingPageId) || null}
+            node={currentEditingNode}
             onSave={handleSavePage}
+            editingPageId={editingPageId}
           />
         </div>
       ) : (
@@ -445,10 +410,9 @@ export default function ReactFlowJourneyEditor({
                 onConnect={onConnect}
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
-                nodeTypes={createNodeTypes(handleEditPage)}
+                nodeTypes={nodeTypes}
                 connectionLineType={ConnectionLineType.SmoothStep}
                 fitView
-                attributionPosition="bottom-left"
                 className={`bg-gray-50 ${selectedNode ? 'cursor-crosshair' : ''}`}
                 connectionLineStyle={{ strokeWidth: 3, stroke: '#3b82f6' }}
               >
