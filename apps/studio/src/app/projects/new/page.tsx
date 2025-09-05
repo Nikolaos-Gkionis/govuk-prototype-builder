@@ -54,6 +54,12 @@ export default function NewProjectPage() {
         description: formData.description.trim(),
         startType: formData.startType,
         createdAt: new Date().toISOString(),
+        settings: {
+          serviceName: formData.name.trim(),
+          phase: 'beta',
+          showPhaseBanner: true,
+          feedbackUrl: 'mailto:feedback@example.gov.uk'
+        },
         pages: [],
         connections: []
       };

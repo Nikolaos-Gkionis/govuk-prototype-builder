@@ -78,7 +78,7 @@ const PAGE_TEMPLATES: PageTemplate[] = [
     fields: [
       {
         id: 'field-1',
-        type: 'textarea',
+        type: 'text',
         label: 'Address line 1',
         hint: 'Enter your house number and street name',
         required: true,
