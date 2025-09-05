@@ -45,6 +45,13 @@ const pageTypes: PageTypeItem[] = [
     description: 'Final success page',
     icon: '/icons/confirmation-page.svg',
     color: 'bg-green-600'
+  },
+  {
+    type: 'service-navigation',
+    name: 'Service Navigation',
+    description: 'Add navigation menu under header',
+    icon: '/icons/service-navigation.svg',
+    color: 'bg-indigo-500'
   }
 ];
 

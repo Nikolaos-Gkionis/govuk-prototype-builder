@@ -4,7 +4,8 @@ export type PageType =
   | 'content' 
   | 'question'
   | 'check-answers'
-  | 'confirmation';
+  | 'confirmation'
+  | 'service-navigation';
 
 // Field types for question pages
 export type FieldType = 

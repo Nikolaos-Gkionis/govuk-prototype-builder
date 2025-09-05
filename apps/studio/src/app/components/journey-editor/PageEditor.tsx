@@ -19,6 +19,12 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
     content: '',
     fields: [] as any[]
   });
+  const [serviceNavConfig, setServiceNavConfig] = useState({
+    itemCount: 3,
+    showServiceName: false,
+    serviceName: '',
+    items: ['', '', '', '', '', ''] // Max 6 items
+  });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [showValidation, setShowValidation] = useState(false);
@@ -29,12 +35,35 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
   // Initialize form data when node changes
   useEffect(() => {
     if (node) {
-      setFormData({
-        title: (node.data.label as string) || '',
-        description: (node.data.description as string) || '',
-        content: (node.data.content as string) || '',
-        fields: (node.data.fields as any[]) || []
-      });
+      const isServiceNavigation = node.data.pageType === 'service-navigation';
+      
+      if (isServiceNavigation) {
+        // Initialize service navigation config from project settings or existing data
+        const projectConfig = getProjectServiceNavigationConfig();
+        const existingConfig = projectConfig || node.data.serviceNavConfig || {};
+        setServiceNavConfig({
+          itemCount: (existingConfig as any).itemCount || 3,
+          showServiceName: (existingConfig as any).showServiceName || false,
+          serviceName: (existingConfig as any).serviceName || '',
+          items: (existingConfig as any).items || ['', '', '', '', '', '']
+        });
+        
+        setFormData({
+          title: (node.data.label as string) || 'Service Navigation',
+          description: 'Configure your service navigation',
+          content: 'Service navigation appears under the header on every page of your prototype.',
+          fields: [] // No regular form fields for service navigation
+        });
+      } else {
+        // Regular page handling
+        setFormData({
+          title: (node.data.label as string) || '',
+          description: (node.data.description as string) || '',
+          content: (node.data.content as string) || '',
+          fields: (node.data.fields as any[]) || []
+        });
+      }
+      
       // Reset validation and success states when switching pages
       setValidationErrors([]);
       setShowValidation(false);
@@ -47,6 +76,95 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleServiceNavChange = (field: string, value: any) => {
+    setServiceNavConfig(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleItemCountChange = (count: number) => {
+    const newItems = [...serviceNavConfig.items];
+    // Ensure we have the right number of items
+    while (newItems.length < count) {
+      newItems.push('');
+    }
+    // Trim excess items if reducing count
+    if (newItems.length > count) {
+      newItems.splice(count);
+    }
+    
+    setServiceNavConfig(prev => ({
+      ...prev,
+      itemCount: count,
+      items: newItems
+    }));
+  };
+
+  const handleItemChange = (index: number, value: string) => {
+    const newItems = [...serviceNavConfig.items];
+    newItems[index] = value;
+    setServiceNavConfig(prev => ({
+      ...prev,
+      items: newItems
+    }));
+  };
+
+  const getProjectServiceNavigationConfig = () => {
+    try {
+      const projects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = urlParams.get('projectId');
+      
+      let currentProject = null;
+      if (projectId) {
+        currentProject = projects.find((p: any) => p.id === projectId);
+      }
+      
+      if (!currentProject && projects.length > 0) {
+        currentProject = projects[0];
+      }
+      
+      return currentProject?.settings?.serviceNavigation || null;
+    } catch (error) {
+      console.error('Error getting service navigation config:', error);
+      return null;
+    }
+  };
+
+  const saveServiceNavigationToProject = (config: any) => {
+    try {
+      const projects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = urlParams.get('projectId');
+      
+      let currentProject = null;
+      if (projectId) {
+        currentProject = projects.find((p: any) => p.id === projectId);
+      }
+      
+      if (!currentProject && projects.length > 0) {
+        currentProject = projects[0];
+      }
+      
+      if (currentProject) {
+        if (!currentProject.settings) {
+          currentProject.settings = {};
+        }
+        currentProject.settings.serviceNavigation = config;
+        
+        // Update the project in the array
+        const projectIndex = projects.findIndex((p: any) => p.id === currentProject.id);
+        if (projectIndex !== -1) {
+          projects[projectIndex] = currentProject;
+          localStorage.setItem('govuk-prototypes', JSON.stringify(projects));
+        }
+      }
+    } catch (error) {
+      console.error('Error saving service navigation to project:', error);
+    }
   };
 
   const addField = () => {
@@ -164,15 +282,31 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
   };
 
   const handleSave = async () => {
-    // Basic validation - only check if title is provided
-    if (!formData.title || formData.title.trim() === '') {
-      setValidationErrors([{
-        field: 'title',
-        message: 'Page title is required',
-        type: 'required'
-      }]);
-      setShowValidation(true);
-      return;
+    const isServiceNavigation = node?.data.pageType === 'service-navigation';
+    
+    if (isServiceNavigation) {
+      // Validate service navigation
+      const hasItems = serviceNavConfig.items.slice(0, serviceNavConfig.itemCount).some(item => item.trim() !== '');
+      if (!hasItems) {
+        setValidationErrors([{
+          field: 'items',
+          message: 'At least one navigation item is required',
+          type: 'required'
+        }]);
+        setShowValidation(true);
+        return;
+      }
+    } else {
+      // Basic validation for regular pages - only check if title is provided
+      if (!formData.title || formData.title.trim() === '') {
+        setValidationErrors([{
+          field: 'title',
+          message: 'Page title is required',
+          type: 'required'
+        }]);
+        setShowValidation(true);
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -182,13 +316,26 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
       // Simulate save delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      onSave({
-        ...node?.data,
-        label: formData.title,
-        description: formData.description,
-        content: formData.content,
-        fields: formData.fields
-      });
+      if (isServiceNavigation) {
+        // Save service navigation configuration to project settings
+        saveServiceNavigationToProject(serviceNavConfig);
+        
+        onSave({
+          ...node?.data,
+          label: formData.title,
+          description: formData.description,
+          content: formData.content,
+          serviceNavConfig: serviceNavConfig
+        });
+      } else {
+        onSave({
+          ...node?.data,
+          label: formData.title,
+          description: formData.description,
+          content: formData.content,
+          fields: formData.fields
+        });
+      }
       
       setSaveSuccess(true);
       setShowValidation(false); // Clear validation errors on successful save
@@ -232,76 +379,167 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
   return (
     <div className="flex-1 bg-gray-50 p-6 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
-        {/* Page Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Edit Page: {node.data.pageType as string}</h1>
-          
-          {/* Basic Page Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Page Title *
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter page title"
-              />
-            </div>
+        {/* Page Header - Only for non-service-navigation pages */}
+        {node.data.pageType !== 'service-navigation' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Edit Page: {node.data.pageType as string}</h1>
             
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Page Description
+            {/* Basic Page Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                  Page Title *
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter page title"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Page Description
+                </label>
+                <input
+                  type="text"
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Brief description of this page"
+                />
+              </div>
+            </div>
+
+            {/* Page Content */}
+            <div className="mt-6">
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                Page Content
               </label>
-              <input
-                type="text"
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+              <textarea
+                id="content"
+                rows={4}
+                value={formData.content}
+                onChange={(e) => handleInputChange('content', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Brief description of this page"
+                placeholder="Enter the main content for this page..."
               />
             </div>
           </div>
+        )}
 
-          {/* Page Content */}
-          <div className="mt-6">
-            <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-              Page Content
-            </label>
-            <textarea
-              id="content"
-              rows={4}
-              value={formData.content}
-              onChange={(e) => handleInputChange('content', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter the main content for this page..."
-            />
-          </div>
-        </div>
-
-        {/* Form Fields Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Form Fields</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowTemplates(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                Use Template
-              </button>
-              <button
-                onClick={addField}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Add Field
-              </button>
+        {/* Service Navigation Configuration or Form Fields Section */}
+        {node.data.pageType === 'service-navigation' ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Service Navigation Configuration</h2>
+            
+            {/* How many items */}
+            <div className="mb-6">
+              <label htmlFor="itemCount" className="block text-sm font-medium text-gray-700 mb-2">
+                How many items
+              </label>
+              <input
+                type="number"
+                id="itemCount"
+                min="1"
+                max="6"
+                value={serviceNavConfig.itemCount}
+                onChange={(e) => handleItemCountChange(parseInt(e.target.value) || 1)}
+                className="w-20 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
+
+            {/* Navigation Items */}
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-gray-700 mb-4">Navigation Items</h3>
+              <div className="space-y-4">
+                {Array.from({ length: serviceNavConfig.itemCount }, (_, index) => (
+                  <div key={index}>
+                    <label htmlFor={`item-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                      Item {index + 1}
+                    </label>
+                    <input
+                      type="text"
+                      id={`item-${index}`}
+                      value={serviceNavConfig.items[index] || ''}
+                      onChange={(e) => handleItemChange(index, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder={`Enter navigation item ${index + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Service Name Toggle */}
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-3">
+                Do you want the navigation to show the service name:
+              </p>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="showServiceName"
+                    checked={serviceNavConfig.showServiceName === true}
+                    onChange={() => handleServiceNavChange('showServiceName', true)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">Yes</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="showServiceName"
+                    checked={serviceNavConfig.showServiceName === false}
+                    onChange={() => handleServiceNavChange('showServiceName', false)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-700">No</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Service Name Input (conditional) */}
+            {serviceNavConfig.showServiceName && (
+              <div className="mb-6">
+                <label htmlFor="serviceName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Service Name
+                </label>
+                <input
+                  type="text"
+                  id="serviceName"
+                  value={serviceNavConfig.serviceName}
+                  onChange={(e) => handleServiceNavChange('serviceName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter your service name"
+                />
+              </div>
+            )}
           </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Form Fields</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowTemplates(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Use Template
+                </button>
+                <button
+                  onClick={addField}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Add Field
+                </button>
+              </div>
+            </div>
 
           {formData.fields.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -552,7 +790,8 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
               ))}
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Validation Summary */}
         {showValidation && validationErrors.length > 0 && (

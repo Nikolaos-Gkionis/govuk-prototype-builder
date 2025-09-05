@@ -87,6 +87,7 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
       case 'question': return 'border-yellow-500';
       case 'check-answers': return 'border-purple-500';
       case 'confirmation': return 'border-green-600';
+      case 'service-navigation': return 'border-indigo-500';
       default: return 'border-gray-500';
     }
   };
@@ -98,6 +99,7 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
       case 'question': return '/icons/question-check.svg';
       case 'check-answers': return '/icons/cya-page.svg';
       case 'confirmation': return '/icons/confirmation-page.svg';
+      case 'service-navigation': return '/icons/service-navigation.svg';
       default: return '/icons/question-page.svg';
     }
   };

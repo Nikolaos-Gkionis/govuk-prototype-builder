@@ -26,6 +26,7 @@ export function PageCarousel({ nodes, editingPageId, onPageSelect, onBackToJourn
       case 'question': return '/icons/question-check.svg';
       case 'check-answers': return '/icons/cya-page.svg';
       case 'confirmation': return '/icons/confirmation-page.svg';
+      case 'service-navigation': return '/icons/service-navigation.svg';
       default: return '/icons/question-page.svg';
     }
   };
@@ -37,6 +38,7 @@ export function PageCarousel({ nodes, editingPageId, onPageSelect, onBackToJourn
       case 'question': return 'border-yellow-500 bg-yellow-50';
       case 'check-answers': return 'border-purple-500 bg-purple-50';
       case 'confirmation': return 'border-green-600 bg-green-50';
+      case 'service-navigation': return 'border-indigo-500 bg-indigo-50';
       default: return 'border-gray-500 bg-gray-50';
     }
   };

@@ -434,6 +434,33 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
 
   const project = getProjectData();
   const serviceName = project.settings?.serviceName || project.name;
+  
+  // Check if there's a service navigation configured for the project
+  // Only show navigation bar on non-service-navigation pages
+  const hasServiceNavigation = project.settings?.serviceNavigation && node.data.pageType !== 'service-navigation';
+  const serviceNavData = hasServiceNavigation ? getServiceNavigationData(project.settings?.serviceNavigation) : null;
+  
+  // Helper function to extract service navigation data from config
+  function getServiceNavigationData(config: any) {
+    if (!config) return null;
+    
+    const navItems = [];
+    for (let i = 0; i < config.itemCount; i++) {
+      const item = config.items[i];
+      if (item && item.trim()) {
+        navItems.push({
+          text: item.trim(),
+          href: '#',
+          current: i === 0 // Make first item current by default
+        });
+      }
+    }
+    
+    return {
+      serviceName: config.showServiceName ? config.serviceName : '',
+      navigation: navItems
+    };
+  }
 
   return (
     <div className="flex-1 bg-white overflow-y-auto">
@@ -524,6 +551,63 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
           </div>
         </header>
 
+        {/* Service Navigation */}
+        {hasServiceNavigation && serviceNavData && serviceNavData.navigation.length > 0 && (
+          <nav className="govuk-service-navigation" aria-label="Service navigation" style={{
+            backgroundColor: '#f8f8f8',
+            borderBottom: '1px solid #b1b4b6',
+            padding: '10px 0'
+          }}>
+            <div style={{
+              maxWidth: '960px',
+              margin: '0 auto',
+              padding: '0 15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              {/* Service Name */}
+              {serviceNavData.serviceName && (
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#0b0c0c',
+                  marginRight: '30px'
+                }}>
+                  {serviceNavData.serviceName}
+                </div>
+              )}
+              
+              {/* Navigation Items */}
+              <ul style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                display: 'flex',
+                gap: '30px'
+              }}>
+                {serviceNavData.navigation.map((item, index) => (
+                  <li key={index}>
+                    <a 
+                      href={item.href}
+                      style={{
+                        color: item.current ? '#1d70b8' : '#1d70b8',
+                        textDecoration: item.current ? 'underline' : 'none',
+                        fontSize: '16px',
+                        fontWeight: 'normal',
+                        padding: '8px 0'
+                      }}
+                      {...(item.current && { 'aria-current': 'page' })}
+                    >
+                      {item.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </nav>
+        )}
+
         {/* Phase Banner */}
         {project.settings?.showPhaseBanner && project.settings?.phase && (
           <div style={{
@@ -565,68 +649,146 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
           }}>
           <main id="main-content" role="main">
             <div style={{ maxWidth: '640px' }}>
-              <h1 style={{
-                fontSize: '48px',
-                fontWeight: 'bold',
-                lineHeight: '1.09375',
-                marginBottom: '30px',
-                color: '#0b0c0c'
-              }}>
-                {pageTitle}
-              </h1>
-              
-              {pageContent && (
-                <div style={{ marginBottom: '30px' }}>
-                  <p style={{ fontSize: '19px', lineHeight: '1.31579', color: '#0b0c0c' }}>
-                    {pageContent}
-                  </p>
-                </div>
-              )}
-              
-              {fields.length > 0 ? (
-                <form style={{ marginBottom: '30px' }}>
-                  {fields.map((field: any, index: number) => (
-                    <div key={index} style={{ marginBottom: '30px' }}>
-                      {renderFormField(field, index)}
-                    </div>
-                  ))}
+              {node.data.pageType === 'service-navigation' ? (
+                // Service Navigation Page - Configuration View Only
+                <div>
+                  <h1 style={{
+                    fontSize: '48px',
+                    fontWeight: 'bold',
+                    lineHeight: '1.09375',
+                    marginBottom: '30px',
+                    color: '#0b0c0c'
+                  }}>
+                    Service Navigation Configuration
+                  </h1>
                   
-                  <button
-                    type="submit"
-                    style={{
-                      backgroundColor: '#00703c',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0',
-                      padding: '8px 10px 7px',
-                      fontSize: '19px',
-                      fontWeight: '400',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 0 #002d18',
-                      textDecoration: 'none',
-                      display: 'inline-block'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#005a30';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = '#00703c';
-                    }}
-                  >
-                    Continue
-                  </button>
-                </form>
+                  <div style={{
+                    backgroundColor: '#f3f2f1',
+                    border: '2px solid #1d70b8',
+                    padding: '20px',
+                    borderRadius: '4px',
+                    marginBottom: '30px'
+                  }}>
+                    <h2 style={{
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      marginBottom: '15px',
+                      color: '#0b0c0c'
+                    }}>
+                      Configuration Status
+                    </h2>
+                    <p style={{ fontSize: '16px', color: '#0b0c0c', marginBottom: '15px' }}>
+                      Use the page editor to configure your service navigation. The navigation will appear on all other pages of your prototype.
+                    </p>
+                    <div style={{
+                      backgroundColor: 'white',
+                      padding: '15px',
+                      border: '1px solid #b1b4b6',
+                      borderRadius: '2px'
+                    }}>
+                      <p style={{ color: '#626a6e', fontStyle: 'italic', margin: 0 }}>
+                        Configure your navigation using the form in the page editor.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#d5e8f3',
+                    padding: '20px',
+                    borderRadius: '4px',
+                    marginBottom: '30px'
+                  }}>
+                    <h2 style={{
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      marginBottom: '15px',
+                      color: '#0b0c0c'
+                    }}>
+                      How to use
+                    </h2>
+                    <ol style={{ paddingLeft: '20px', marginBottom: '0' }}>
+                      <li style={{ marginBottom: '10px' }}>
+                        Configure your navigation items using the form in the page editor
+                      </li>
+                      <li style={{ marginBottom: '10px' }}>
+                        Click "Save Changes" to apply the configuration
+                      </li>
+                      <li style={{ marginBottom: '10px' }}>
+                        The navigation will appear on all other pages in your prototype
+                      </li>
+                      <li>
+                        You can edit the navigation at any time by returning to this page
+                      </li>
+                    </ol>
+                  </div>
+                </div>
               ) : (
-                <div style={{
-                  padding: '20px',
-                  backgroundColor: '#f8f8f8',
-                  border: '2px dashed #b1b4b6',
-                  textAlign: 'center' as const,
-                  color: '#626a6e'
-                }}>
-                  <p style={{ margin: 0, fontStyle: 'italic' }}>
-                    No form fields added to this page yet. Add fields using the page editor.
-                  </p>
+                // Regular page view
+                <div>
+                  <h1 style={{
+                    fontSize: '48px',
+                    fontWeight: 'bold',
+                    lineHeight: '1.09375',
+                    marginBottom: '30px',
+                    color: '#0b0c0c'
+                  }}>
+                    {pageTitle}
+                  </h1>
+              
+                  {pageContent && (
+                    <div style={{ marginBottom: '30px' }}>
+                      <p style={{ fontSize: '19px', lineHeight: '1.31579', color: '#0b0c0c' }}>
+                        {pageContent}
+                      </p>
+                    </div>
+                  )}
+              
+                  {fields.length > 0 ? (
+                    <form style={{ marginBottom: '30px' }}>
+                      {fields.map((field: any, index: number) => (
+                        <div key={index} style={{ marginBottom: '30px' }}>
+                          {renderFormField(field, index)}
+                        </div>
+                      ))}
+                      
+                      <button
+                        type="submit"
+                        style={{
+                          backgroundColor: '#00703c',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0',
+                          padding: '8px 10px 7px',
+                          fontSize: '19px',
+                          fontWeight: '400',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 0 #002d18',
+                          textDecoration: 'none',
+                          display: 'inline-block'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#005a30';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = '#00703c';
+                        }}
+                      >
+                        Continue
+                      </button>
+                    </form>
+                  ) : (
+                    <div style={{
+                      padding: '20px',
+                      backgroundColor: '#f8f8f8',
+                      border: '2px dashed #b1b4b6',
+                      textAlign: 'center' as const,
+                      color: '#626a6e'
+                    }}>
+                      <p style={{ margin: 0, fontStyle: 'italic' }}>
+                        No form fields added to this page yet. Add fields using the page editor.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
