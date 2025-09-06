@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { Node } from '@xyflow/react';
 import { PagePreview } from './PagePreview';
 import { PageTemplates } from './PageTemplates';
+import { CTAEditor } from './CTAEditor';
 import { validateForm, ValidationError, getFieldValidationMessage, COMMON_VALIDATIONS } from './validation';
+import { PageType } from '@/types/prototype';
 
 interface PageEditorProps {
   node: Node | null;
@@ -17,7 +19,8 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
     title: '',
     description: '',
     content: '',
-    fields: [] as any[]
+    fields: [] as any[],
+    cta: undefined as any
   });
   const [serviceNavConfig, setServiceNavConfig] = useState({
     itemCount: 3,
@@ -29,6 +32,7 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [showValidation, setShowValidation] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showCTAEditor, setShowCTAEditor] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -52,7 +56,8 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
           title: (node.data.label as string) || 'Service Navigation',
           description: 'Configure your service navigation',
           content: 'Service navigation appears under the header on every page of your prototype.',
-          fields: [] // No regular form fields for service navigation
+          fields: [], // No regular form fields for service navigation
+          cta: node.data.cta || undefined
         });
       } else {
         // Regular page handling
@@ -60,7 +65,8 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
           title: (node.data.label as string) || '',
           description: (node.data.description as string) || '',
           content: (node.data.content as string) || '',
-          fields: (node.data.fields as any[]) || []
+          fields: (node.data.fields as any[]) || [],
+          cta: node.data.cta || undefined
         });
       }
       
@@ -110,6 +116,18 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
       ...prev,
       items: newItems
     }));
+  };
+
+  const handleCTASave = (cta: any) => {
+    setFormData(prev => ({
+      ...prev,
+      cta: cta
+    }));
+    setShowCTAEditor(false);
+  };
+
+  const handleCTACancel = () => {
+    setShowCTAEditor(false);
   };
 
   const getProjectServiceNavigationConfig = () => {
@@ -853,6 +871,13 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
             >
               Validate Form
             </button>
+            
+            <button
+              onClick={() => setShowCTAEditor(true)}
+              className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+            >
+              Edit CTA Button
+            </button>
           </div>
           
           <button
@@ -885,6 +910,20 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
           onApplyTemplate={applyTemplate}
           onClose={() => setShowTemplates(false)}
         />
+      )}
+
+      {/* CTA Editor Modal */}
+      {showCTAEditor && node && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <CTAEditor
+              pageType={node.data.pageType as PageType}
+              cta={formData.cta}
+              onSave={handleCTASave}
+              onCancel={handleCTACancel}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

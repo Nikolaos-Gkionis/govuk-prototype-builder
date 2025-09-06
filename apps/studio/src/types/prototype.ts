@@ -48,6 +48,14 @@ export interface Field {
   validation?: FieldValidation;
 }
 
+// CTA (Call-to-Action) button configuration
+export interface PageCTA {
+  text: string;
+  type: 'primary' | 'secondary' | 'warning' | 'start';
+  action: 'continue' | 'start' | 'submit' | 'back' | 'custom';
+  nextPageId?: string; // For continue/submit actions
+}
+
 // Page definition
 export interface Page {
   id: string;
@@ -58,6 +66,7 @@ export interface Page {
   fields: Field[];
   next: string[]; // IDs of next pages
   conditions: Condition[];
+  cta?: PageCTA; // Call-to-action button configuration
   metadata: Record<string, any>;
 }
 
@@ -77,6 +86,8 @@ export interface JSONLogicExpression {
 export interface Project {
   id: string;
   name: string;
+  description?: string;
+  startType?: 'blank' | 'template';
   govukFrontendVersion: string;
   pages: Page[];
   settings: ProjectSettings;
@@ -88,6 +99,7 @@ export interface ProjectSettings {
   phase: 'alpha' | 'beta' | 'live';
   startPage: string;
   sessionSecret: string;
+  showPhaseBanner?: boolean;
 }
 
 // Data model for user answers

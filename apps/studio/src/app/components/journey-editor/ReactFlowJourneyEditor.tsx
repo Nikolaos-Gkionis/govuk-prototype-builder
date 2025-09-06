@@ -43,6 +43,7 @@ const customStyles = `
 import { PagePalette } from './PagePalette';
 import { PageCarousel } from './PageCarousel';
 import { PageEditor } from './PageEditor';
+import { useDatabase } from '@/hooks/useDatabase';
 
 // Types for our journey editor
 interface JourneyPage {
@@ -206,6 +207,9 @@ export default function ReactFlowJourneyEditor({
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [currentEditingNode, setCurrentEditingNode] = useState<any>(null);
 
+  // Database operations
+  const { saveProject, loading: saveLoading, error: saveError } = useDatabase();
+
   // Initialize with a start page if no pages exist
   useMemo(() => {
     if (nodes.length === 0) {
@@ -332,8 +336,8 @@ export default function ReactFlowJourneyEditor({
     }
   }, [selectedNode, setNodes, setEdges]);
 
-  // Save project data
-  const handleSave = useCallback(() => {
+  // Save project data to database
+  const handleSave = useCallback(async () => {
     const projectData = {
       id: projectId,
       name: projectName,
@@ -354,19 +358,13 @@ export default function ReactFlowJourneyEditor({
       }))
     };
 
-    // Save to localStorage
-    const existingProjects = JSON.parse(localStorage.getItem('govuk-prototypes') || '[]');
-    const projectIndex = existingProjects.findIndex((p: any) => p.id === projectId);
-    
-    if (projectIndex >= 0) {
-      existingProjects[projectIndex] = projectData;
+    const success = await saveProject(projectData);
+    if (success) {
+      console.log('Project saved successfully to database');
     } else {
-      existingProjects.push(projectData);
+      console.error('Failed to save project to database');
     }
-    
-    localStorage.setItem('govuk-prototypes', JSON.stringify(existingProjects));
-    console.log('Project saved successfully');
-  }, [projectId, projectName, projectDescription, startType, nodes, edges]);
+  }, [projectId, projectName, projectDescription, startType, nodes, edges, saveProject]);
 
   return (
     <div className="flex h-full bg-gray-50">
@@ -500,10 +498,22 @@ export default function ReactFlowJourneyEditor({
                 {/* Save Button */}
                 <button
                   onClick={handleSave}
-                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition-colors"
+                  disabled={saveLoading}
+                  className={`px-3 py-1 text-white rounded text-sm transition-colors ${
+                    saveLoading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
-                  Save
+                  {saveLoading ? 'Saving...' : 'Save'}
                 </button>
+                
+                {/* Error Display */}
+                {saveError && (
+                  <div className="text-red-600 text-xs mt-1">
+                    Error: {saveError}
+                  </div>
+                )}
                 
                 {/* Delete Button - Only show when node is selected */}
                 {selectedNode && (

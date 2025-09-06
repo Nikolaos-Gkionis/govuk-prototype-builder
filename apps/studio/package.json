@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup-db": "node scripts/setup-database.js",
+    "test-db": "curl http://localhost:3000/api/test-database"
   },
   "dependencies": {
     "@govuk-prototype-builder/ai": "*",
@@ -15,6 +17,7 @@
     "@govuk-prototype-builder/schema": "*",
     "@govuk-prototype-builder/utils": "*",
     "@xyflow/react": "^12.8.4",
+    "sqlite3": "^5.1.6",
     "clsx": "^2.0.0",
     "govuk-frontend": "^5.11.2",
     "next": "15.5.0",
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/sqlite3": "^3.1.11",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

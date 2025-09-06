@@ -2,6 +2,8 @@
 
 import { Node } from '@xyflow/react';
 import { useEffect, useState } from 'react';
+import { getPageCTA, CTA_STYLES, CTA_HOVER_STYLES } from '../../../lib/page-cta-config';
+import { PageCTA, PageType } from '@/types/prototype';
 
 interface PagePreviewProps {
   node: Node | null;
@@ -750,31 +752,37 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
                           {renderFormField(field, index)}
                         </div>
                       ))}
-                      
-                      <button
-                        type="submit"
-                        style={{
-                          backgroundColor: '#00703c',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '0',
-                          padding: '8px 10px 7px',
-                          fontSize: '19px',
-                          fontWeight: '400',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 0 #002d18',
-                          textDecoration: 'none',
-                          display: 'inline-block'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#005a30';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#00703c';
-                        }}
-                      >
-                        Continue
-                      </button>
+                      {(() => {
+                        const cta = getPageCTA(node.data.pageType as PageType, node.data.cta as PageCTA | undefined);
+                        const buttonStyle = CTA_STYLES[cta.type];
+                        const hoverStyle = CTA_HOVER_STYLES[cta.type];
+                        
+                        return (
+                          <button
+                            type="submit"
+                            style={buttonStyle}
+                            onMouseOver={(e) => {
+                              Object.assign(e.currentTarget.style, hoverStyle);
+                            }}
+                            onMouseOut={(e) => {
+                              Object.assign(e.currentTarget.style, buttonStyle);
+                            }}
+                          >
+                            {cta.text}
+                            {cta.type === 'start' && (
+                              <svg 
+                                width="20" 
+                                height="20" 
+                                viewBox="0 0 20 20" 
+                                fill="currentColor"
+                                style={{ marginLeft: '8px' }}
+                              >
+                                <path d="M8.5 4.5L13.5 9.5L8.5 14.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })()}
                     </form>
                   ) : (
                     <div style={{
@@ -784,9 +792,42 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
                       textAlign: 'center' as const,
                       color: '#626a6e'
                     }}>
-                      <p style={{ margin: 0, fontStyle: 'italic' }}>
+                      <p style={{ margin: '0 0 20px 0', fontStyle: 'italic' }}>
                         No form fields added to this page yet. Add fields using the page editor.
                       </p>
+                      
+                      {/* CTA Button for pages without forms */}
+                      {(() => {
+                        const cta = getPageCTA(node.data.pageType as PageType, node.data.cta as PageCTA | undefined);
+                        const buttonStyle = CTA_STYLES[cta.type];
+                        const hoverStyle = CTA_HOVER_STYLES[cta.type];
+                        
+                        return (
+                          <button
+                            type="button"
+                            style={buttonStyle}
+                            onMouseOver={(e) => {
+                              Object.assign(e.currentTarget.style, hoverStyle);
+                            }}
+                            onMouseOut={(e) => {
+                              Object.assign(e.currentTarget.style, buttonStyle);
+                            }}
+                          >
+                            {cta.text}
+                            {cta.type === 'start' && (
+                              <svg 
+                                width="20" 
+                                height="20" 
+                                viewBox="0 0 20 20" 
+                                fill="currentColor"
+                                style={{ marginLeft: '8px' }}
+                              >
+                                <path d="M8.5 4.5L13.5 9.5L8.5 14.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
