@@ -43,6 +43,7 @@ const customStyles = `
 import { PagePalette } from './PagePalette';
 import { PageCarousel } from './PageCarousel';
 import { PageEditor } from './PageEditor';
+import { ConditionalLogicModal } from './ConditionalLogicModal';
 import { useDatabase } from '@/hooks/useDatabase';
 
 // Types for our journey editor
@@ -80,7 +81,7 @@ interface ReactFlowJourneyEditorProps {
 let globalEditFunction: ((nodeId: string) => void) | null = null;
 
 // Custom node types for different page types
-const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: boolean }) => {
+const CustomNode = ({ data, id, selected, hasConditionalLogic }: { data: any; id: string; selected?: boolean; hasConditionalLogic?: boolean }) => {
   const getNodeBorderColor = (pageType: string) => {
     switch (pageType) {
       case 'start': return 'border-green-500';
@@ -155,6 +156,15 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
         <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
           {data.pageType}
         </span>
+        {hasConditionalLogic && (
+          <div className="ml-auto">
+            <div className="w-4 h-4 bg-purple-100 rounded-full flex items-center justify-center" title="Has conditional logic">
+              <svg className="w-3 h-3 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        )}
       </div>
       <div className="text-gray-900 font-semibold text-sm">
         {data.label}
@@ -184,9 +194,16 @@ const CustomNode = ({ data, id, selected }: { data: any; id: string; selected?: 
   );
 };
 
+// Wrapper component to pass conditional logic data
+const CustomNodeWrapper = (props: any) => {
+  const { conditionalRules } = props;
+  const hasConditionalLogic = conditionalRules?.some((rule: any) => rule.source_page_id === props.id) || false;
+  return <CustomNode {...props} hasConditionalLogic={hasConditionalLogic} />;
+};
+
 // Create a stable node types object
 const nodeTypes: NodeTypes = {
-  custom: CustomNode,
+  custom: CustomNodeWrapper,
 };
 
 export default function ReactFlowJourneyEditor({
@@ -206,6 +223,11 @@ export default function ReactFlowJourneyEditor({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [currentEditingNode, setCurrentEditingNode] = useState<any>(null);
+
+  // Conditional Logic Modal state
+  const [showConditionalLogicModal, setShowConditionalLogicModal] = useState(false);
+  const [conditionalRules, setConditionalRules] = useState<any[]>([]);
+  const [pageFields, setPageFields] = useState<{[pageId: string]: any[]}>({});
 
   // Database operations
   const { saveProject, loading: saveLoading, error: saveError } = useDatabase();
@@ -291,7 +313,7 @@ export default function ReactFlowJourneyEditor({
   }, []);
 
   // Handle saving page data
-  const handleSavePage = useCallback((pageData: any) => {
+  const handleSavePage = useCallback(async (pageData: any) => {
     // Update the node data with the new page content
     setNodes((nds: any) => 
       nds.map((node: any) => 
@@ -307,6 +329,40 @@ export default function ReactFlowJourneyEditor({
         ...currentEditingNode,
         data: { ...currentEditingNode.data, ...pageData }
       });
+    }
+
+    // Save fields to database if they exist
+    if (pageData.fields && pageData.fields.length > 0 && editingPageId) {
+      try {
+        // First, delete existing fields for this page
+        await fetch(`/api/page-fields?pageId=${editingPageId}`, {
+          method: 'DELETE'
+        });
+
+        // Then save new fields
+        for (const field of pageData.fields) {
+          await fetch('/api/page-fields', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              pageId: editingPageId,
+              field: field
+            }),
+          });
+        }
+        
+        // Update the pageFields state
+        setPageFields(prev => ({
+          ...prev,
+          [editingPageId]: pageData.fields
+        }));
+        
+        console.log('Fields saved to database successfully');
+      } catch (error) {
+        console.error('Error saving fields to database:', error);
+      }
     }
     
     // Show success message (you could add a toast notification here)
@@ -335,6 +391,90 @@ export default function ReactFlowJourneyEditor({
       setSelectedNode(null);
     }
   }, [selectedNode, setNodes, setEdges]);
+
+  // Load fields for a specific page
+  const loadPageFields = useCallback(async (pageId: string) => {
+    try {
+      const response = await fetch(`/api/page-fields?pageId=${pageId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPageFields(prev => ({
+          ...prev,
+          [pageId]: data.fields || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading page fields:', error);
+    }
+  }, []);
+
+  // Conditional Logic Functions
+  const handleOpenConditionalLogic = useCallback(async () => {
+    setShowConditionalLogicModal(true);
+    // Load fields for all pages when opening the modal
+    for (const node of nodes as any[]) {
+      if (!pageFields[node.id]) {
+        await loadPageFields(node.id);
+      }
+    }
+  }, [nodes, pageFields, loadPageFields]);
+
+  const handleCloseConditionalLogic = useCallback(() => {
+    setShowConditionalLogicModal(false);
+  }, []);
+
+  const handleSaveCondition = useCallback(async (condition: any) => {
+    try {
+      const response = await fetch('/api/conditional-rules', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: condition.id,
+          projectId,
+          sourcePageId: condition.sourcePageId,
+          targetPageId: condition.toPageId,
+          fieldName: condition.fieldName,
+          conditionType: condition.conditionType,
+          conditionValue: condition.conditionValue,
+          conditionLabel: condition.conditionLabel,
+          jsonlogicExpression: JSON.stringify(condition.expression)
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh conditional rules
+        const rulesResponse = await fetch(`/api/conditional-rules?projectId=${projectId}`);
+        if (rulesResponse.ok) {
+          const data = await rulesResponse.json();
+          setConditionalRules(data.rules);
+        }
+        console.log('Conditional rule saved successfully');
+      } else {
+        console.error('Failed to save conditional rule');
+      }
+    } catch (error) {
+      console.error('Error saving conditional rule:', error);
+    }
+  }, [projectId]);
+
+  // Load conditional rules on component mount
+  useEffect(() => {
+    const loadConditionalRules = async () => {
+      try {
+        const response = await fetch(`/api/conditional-rules?projectId=${projectId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setConditionalRules(data.rules);
+        }
+      } catch (error) {
+        console.error('Error loading conditional rules:', error);
+      }
+    };
+
+    loadConditionalRules();
+  }, [projectId]);
 
   // Save project data to database
   const handleSave = useCallback(async () => {
@@ -403,7 +543,13 @@ export default function ReactFlowJourneyEditor({
           <div className="flex-1 relative">
             <ReactFlowProvider>
               <ReactFlow
-                nodes={nodes}
+                nodes={nodes.map((node: any) => ({
+                  ...node,
+                  data: {
+                    ...node.data,
+                    conditionalRules
+                  }
+                })) as any}
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
@@ -476,6 +622,7 @@ export default function ReactFlowJourneyEditor({
                 
                 {/* Conditional Logic Tool */}
                 <button
+                  onClick={handleOpenConditionalLogic}
                   title="Add Conditional Logic"
                   className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
                 >
@@ -529,6 +676,27 @@ export default function ReactFlowJourneyEditor({
           </div>
         </>
       )}
+
+      {/* Conditional Logic Modal */}
+      <ConditionalLogicModal
+        isOpen={showConditionalLogicModal}
+        onClose={handleCloseConditionalLogic}
+        pages={nodes.map((node: any) => ({
+          id: node.id,
+          key: node.id,
+          title: node.data.label,
+          type: node.data.pageType,
+          path: `/${node.id}`,
+          fields: pageFields[node.id] || [],
+          next: [],
+          conditions: [],
+          metadata: {}
+        }))}
+        selectedPageId={selectedNode || undefined}
+        onSaveCondition={handleSaveCondition}
+        existingConditions={conditionalRules}
+        onLoadPageFields={loadPageFields}
+      />
     </div>
   );
 }

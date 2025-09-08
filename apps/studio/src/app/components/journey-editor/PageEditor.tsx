@@ -22,6 +22,25 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
     fields: [] as any[],
     cta: undefined as any
   });
+  const [loadedFields, setLoadedFields] = useState<any[]>([]);
+
+  // Load fields from database
+  const loadFieldsFromDatabase = async (pageId: string) => {
+    try {
+      console.log('Loading fields for page:', pageId);
+      const response = await fetch(`/api/page-fields?pageId=${pageId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Loaded fields from database:', data.fields);
+        setLoadedFields(data.fields || []);
+        return data.fields || [];
+      }
+    } catch (error) {
+      console.error('Error loading fields from database:', error);
+    }
+    return [];
+  };
+
   const [serviceNavConfig, setServiceNavConfig] = useState({
     itemCount: 3,
     showServiceName: false,
@@ -68,6 +87,11 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
           fields: (node.data.fields as any[]) || [],
           cta: node.data.cta || undefined
         });
+        
+        // Load fields from database
+        if (editingPageId) {
+          loadFieldsFromDatabase(editingPageId);
+        }
       }
       
       // Reset validation and success states when switching pages
@@ -386,7 +410,7 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
             label: formData.title,
             description: formData.description,
             content: formData.content,
-            fields: formData.fields
+            fields: loadedFields.length > 0 ? loadedFields : formData.fields
           }
         }}
         onClose={() => setIsPreviewMode(false)}

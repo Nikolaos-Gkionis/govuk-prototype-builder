@@ -605,3 +605,162 @@ export const connectionService = {
     });
   }
 };
+
+/**
+ * Conditional Rules Service
+ */
+export class ConditionalRulesService {
+  private db: Database;
+
+  constructor() {
+    this.db = getDatabase();
+  }
+
+  /**
+   * Create a new conditional rule
+   */
+  async create(rule: {
+    id: string;
+    projectId: string;
+    sourcePageId: string;
+    targetPageId: string;
+    fieldName: string;
+    conditionType: string;
+    conditionValue: string;
+    conditionLabel?: string;
+    jsonlogicExpression: string;
+  }): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const stmt = this.db.prepare(`
+        INSERT INTO conditional_rules (
+          id, project_id, source_page_id, target_page_id, field_name,
+          condition_type, condition_value, condition_label, jsonlogic_expression
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      stmt.run([
+        rule.id,
+        rule.projectId,
+        rule.sourcePageId,
+        rule.targetPageId,
+        rule.fieldName,
+        rule.conditionType,
+        rule.conditionValue,
+        rule.conditionLabel || null,
+        rule.jsonlogicExpression
+      ], (err) => {
+        if (err) {
+          console.error('Error creating conditional rule:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  /**
+   * Get all conditional rules for a project
+   */
+  async getByProject(projectId: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        'SELECT * FROM conditional_rules WHERE project_id = ? ORDER BY created_at',
+        [projectId],
+        (err, rows) => {
+          if (err) {
+            console.error('Error fetching conditional rules:', err);
+            reject(err);
+          } else {
+            resolve(rows || []);
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Get conditional rules for a specific page
+   */
+  async getByPage(pageId: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        'SELECT * FROM conditional_rules WHERE source_page_id = ? ORDER BY created_at',
+        [pageId],
+        (err, rows) => {
+          if (err) {
+            console.error('Error fetching conditional rules for page:', err);
+            reject(err);
+          } else {
+            resolve(rows || []);
+          }
+        }
+      );
+    });
+  }
+
+  /**
+   * Update a conditional rule
+   */
+  async update(ruleId: string, updates: {
+    conditionType?: string;
+    conditionValue?: string;
+    conditionLabel?: string;
+    jsonlogicExpression?: string;
+  }): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+      const values = Object.values(updates);
+      values.push(ruleId);
+
+      const stmt = this.db.prepare(`
+        UPDATE conditional_rules 
+        SET ${fields}, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `);
+      
+      stmt.run(values, (err) => {
+        if (err) {
+          console.error('Error updating conditional rule:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  /**
+   * Delete a conditional rule
+   */
+  async delete(ruleId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const stmt = this.db.prepare('DELETE FROM conditional_rules WHERE id = ?');
+      stmt.run([ruleId], (err) => {
+        if (err) {
+          console.error('Error deleting conditional rule:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  /**
+   * Delete all conditional rules for a project
+   */
+  async deleteByProject(projectId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const stmt = this.db.prepare('DELETE FROM conditional_rules WHERE project_id = ?');
+      stmt.run([projectId], (err) => {
+        if (err) {
+          console.error('Error deleting conditional rules for project:', err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+}

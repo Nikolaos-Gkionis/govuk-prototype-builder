@@ -8,9 +8,24 @@ import { PageCTA, PageType } from '@/types/prototype';
 interface PagePreviewProps {
   node: Node | null;
   onClose: () => void;
+  onNavigate?: (pageId: string) => void;
 }
 
-export function PagePreview({ node, onClose }: PagePreviewProps) {
+export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
+  const [showNavigationMessage, setShowNavigationMessage] = useState(false);
+
+  // Handle CTA button click
+  const handleCTAClick = () => {
+    if (onNavigate) {
+      // For now, just show a message
+      setShowNavigationMessage(true);
+      setTimeout(() => setShowNavigationMessage(false), 3000);
+    } else {
+      // Fallback: show alert
+      alert('CTA clicked! In a real prototype, this would navigate to the next page.');
+    }
+  };
+
   // Initialize GOV.UK Frontend JavaScript for interactive components
   useEffect(() => {
     // Check if script already exists
@@ -60,6 +75,12 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
 
   const renderFormField = (field: any, index: number) => {
     const fieldId = `field-${index}`;
+    
+    // Debug logging
+    if (field.type === 'radios') {
+      console.log('Rendering radio field:', field);
+      console.log('Field options:', field.options);
+    }
     const govukStyles = {
       formGroup: {
         marginBottom: '20px'
@@ -216,21 +237,23 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
 
       case 'radios':
         return (
-          <div style={govukStyles.formGroup}>
-            <fieldset style={govukStyles.fieldset}>
-              <legend style={govukStyles.legend}>
-                {field.label}
+          <div className="govuk-form-group">
+            <fieldset className="govuk-fieldset">
+              <legend className="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 className="govuk-fieldset__heading">
+                  {field.label}
+                </h1>
               </legend>
               {field.hint && (
-                <div style={govukStyles.hint} id={`${fieldId}-hint`}>
+                <div className="govuk-hint" id={`${fieldId}-hint`}>
                   {field.hint}
                 </div>
               )}
-              <div style={govukStyles.radioGroup}>
+              <div className="govuk-radios" data-module="govuk-radios">
                 {field.options?.map((option: any, optionIndex: number) => (
-                  <div key={optionIndex} style={govukStyles.radioItem}>
+                  <div key={optionIndex} className="govuk-radios__item">
                     <input
-                      style={govukStyles.radioInput}
+                      className="govuk-radios__input"
                       id={`${fieldId}-${optionIndex}`}
                       name={fieldId}
                       type="radio"
@@ -238,7 +261,7 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
                       aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
                       required={field.required}
                     />
-                    <label style={govukStyles.radioLabel} htmlFor={`${fieldId}-${optionIndex}`}>
+                    <label className="govuk-label govuk-radios__label" htmlFor={`${fieldId}-${optionIndex}`}>
                       {option.text}
                     </label>
                   </div>
@@ -250,21 +273,23 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
 
       case 'checkboxes':
         return (
-          <div style={govukStyles.formGroup}>
-            <fieldset style={govukStyles.fieldset}>
-              <legend style={govukStyles.legend}>
-                {field.label}
+          <div className="govuk-form-group">
+            <fieldset className="govuk-fieldset">
+              <legend className="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 className="govuk-fieldset__heading">
+                  {field.label}
+                </h1>
               </legend>
               {field.hint && (
-                <div style={govukStyles.hint} id={`${fieldId}-hint`}>
+                <div className="govuk-hint" id={`${fieldId}-hint`}>
                   {field.hint}
                 </div>
               )}
-              <div style={govukStyles.radioGroup}>
+              <div className="govuk-checkboxes" data-module="govuk-checkboxes">
                 {field.options?.map((option: any, optionIndex: number) => (
-                  <div key={optionIndex} style={govukStyles.radioItem}>
+                  <div key={optionIndex} className="govuk-checkboxes__item">
                     <input
-                      style={govukStyles.radioInput}
+                      className="govuk-checkboxes__input"
                       id={`${fieldId}-${optionIndex}`}
                       name={`${fieldId}[]`}
                       type="checkbox"
@@ -272,7 +297,7 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
                       aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
                       required={field.required}
                     />
-                    <label style={govukStyles.radioLabel} htmlFor={`${fieldId}-${optionIndex}`}>
+                    <label className="govuk-label govuk-checkboxes__label" htmlFor={`${fieldId}-${optionIndex}`}>
                       {option.text}
                     </label>
                   </div>
@@ -759,8 +784,9 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
                         
                         return (
                           <button
-                            type="submit"
+                            type="button"
                             style={buttonStyle}
+                            onClick={handleCTAClick}
                             onMouseOver={(e) => {
                               Object.assign(e.currentTarget.style, hoverStyle);
                             }}
@@ -806,6 +832,7 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
                           <button
                             type="button"
                             style={buttonStyle}
+                            onClick={handleCTAClick}
                             onMouseOver={(e) => {
                               Object.assign(e.currentTarget.style, hoverStyle);
                             }}
@@ -950,6 +977,13 @@ export function PagePreview({ node, onClose }: PagePreviewProps) {
             </div>
           </div>
         </footer>
+
+        {/* Navigation Message */}
+        {showNavigationMessage && (
+          <div className="absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-20">
+            CTA clicked! In a real prototype, this would navigate to the next page.
+          </div>
+        )}
       </div>
     </div>
   );

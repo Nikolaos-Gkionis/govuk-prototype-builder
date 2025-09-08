@@ -69,9 +69,30 @@ CREATE TABLE IF NOT EXISTS page_connections (
     FOREIGN KEY (target_page_id) REFERENCES pages(id) ON DELETE CASCADE
 );
 
+-- Conditional logic rules table - stores if/then conditions for page routing
+CREATE TABLE IF NOT EXISTS conditional_rules (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    source_page_id TEXT NOT NULL,
+    target_page_id TEXT NOT NULL,
+    field_name TEXT NOT NULL,
+    condition_type TEXT NOT NULL, -- 'equals', 'not_equals', 'contains', 'not_contains'
+    condition_value TEXT NOT NULL,
+    condition_label TEXT, -- Optional human-readable label
+    jsonlogic_expression TEXT NOT NULL, -- JSONLogic expression for evaluation
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (source_page_id) REFERENCES pages(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_page_id) REFERENCES pages(id) ON DELETE CASCADE
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pages_project_id ON pages(project_id);
 CREATE INDEX IF NOT EXISTS idx_page_fields_page_id ON page_fields(page_id);
 CREATE INDEX IF NOT EXISTS idx_page_connections_project_id ON page_connections(project_id);
 CREATE INDEX IF NOT EXISTS idx_page_connections_source ON page_connections(source_page_id);
 CREATE INDEX IF NOT EXISTS idx_page_connections_target ON page_connections(target_page_id);
+CREATE INDEX IF NOT EXISTS idx_conditional_rules_project_id ON conditional_rules(project_id);
+CREATE INDEX IF NOT EXISTS idx_conditional_rules_source ON conditional_rules(source_page_id);
+CREATE INDEX IF NOT EXISTS idx_conditional_rules_target ON conditional_rules(target_page_id);
