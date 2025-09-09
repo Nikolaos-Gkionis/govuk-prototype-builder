@@ -12,9 +12,10 @@ interface PageEditorProps {
   node: Node | null;
   onSave: (pageData: any) => void;
   editingPageId?: string | null;
+  projectId?: string;
 }
 
-export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
+export function PageEditor({ node, onSave, editingPageId, projectId }: PageEditorProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -23,6 +24,7 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
     cta: undefined as any
   });
   const [loadedFields, setLoadedFields] = useState<any[]>([]);
+  const [conditionalRules, setConditionalRules] = useState<any[]>([]);
 
   // Load fields from database
   const loadFieldsFromDatabase = async (pageId: string) => {
@@ -37,6 +39,23 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
       }
     } catch (error) {
       console.error('Error loading fields from database:', error);
+    }
+    return [];
+  };
+
+  // Load conditional rules from database
+  const loadConditionalRules = async (projectId: string) => {
+    try {
+      console.log('Loading conditional rules for project:', projectId);
+      const response = await fetch(`/api/conditional-rules?projectId=${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Loaded conditional rules:', data.rules);
+        setConditionalRules(data.rules || []);
+        return data.rules || [];
+      }
+    } catch (error) {
+      console.error('Error loading conditional rules:', error);
     }
     return [];
   };
@@ -100,6 +119,13 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
       setSaveSuccess(false);
     }
   }, [node, editingPageId]);
+
+  // Load conditional rules when projectId changes
+  useEffect(() => {
+    if (projectId) {
+      loadConditionalRules(projectId);
+    }
+  }, [projectId]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -420,6 +446,15 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
           }
         }}
         onClose={() => setIsPreviewMode(false)}
+        onNavigate={(pageId: string) => {
+          console.log('🎯 Preview navigation to page:', pageId);
+          // In preview mode within the editor, we can't actually navigate to other pages
+          // But we could show a message or implement a different behavior
+          alert(`In a full prototype, this would navigate to page: ${pageId}`);
+        }}
+        projectId={projectId}
+        conditionalRules={conditionalRules}
+        allNodes={[]} // Not available in this context, but could be passed as a prop
       />
     );
   }

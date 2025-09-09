@@ -1,28 +1,118 @@
 'use client';
 
 import { Node } from '@xyflow/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getPageCTA, CTA_STYLES, CTA_HOVER_STYLES } from '../../../lib/page-cta-config';
 import { PageCTA, PageType } from '@/types/prototype';
+import jsonLogic from 'json-logic-js';
 
 interface PagePreviewProps {
   node: Node | null;
   onClose: () => void;
   onNavigate?: (pageId: string) => void;
+  projectId?: string;
+  conditionalRules?: any[];
+  allNodes?: Node[];
 }
 
-export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
+export function PagePreview({ 
+  node, 
+  onClose, 
+  onNavigate, 
+  projectId, 
+  conditionalRules = [], 
+  allNodes = [] 
+}: PagePreviewProps) {
   const [showNavigationMessage, setShowNavigationMessage] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
-  // Handle CTA button click
+  // Collect form data from the current form
+  const collectFormData = (): Record<string, any> => {
+    if (!formRef.current) return {};
+    
+    const formDataObj: Record<string, any> = {};
+    const formElement = formRef.current;
+    
+    // Get all form inputs
+    const inputs = formElement.querySelectorAll('input, select, textarea');
+    inputs.forEach((input: any) => {
+      if (input.type === 'radio') {
+        if (input.checked) {
+          formDataObj[input.name] = input.value;
+        }
+      } else if (input.type === 'checkbox') {
+        if (input.checked) {
+          if (!formDataObj[input.name]) formDataObj[input.name] = [];
+          formDataObj[input.name].push(input.value);
+        }
+      } else {
+        formDataObj[input.name] = input.value;
+      }
+    });
+    
+    return formDataObj;
+  };
+
+  // Evaluate conditional rules and determine next page
+  const getNextPageId = (currentFormData: Record<string, any>): string | null => {
+    if (!node || !conditionalRules.length) return null;
+    
+    console.log('🔍 Evaluating conditional rules for page:', node.id);
+    console.log('📝 Form data:', currentFormData);
+    console.log('📋 Available rules:', conditionalRules);
+    
+    // Find rules that apply to this page
+    const applicableRules = conditionalRules.filter(
+      rule => rule.source_page_id === node.id || rule.sourcePageId === node.id
+    );
+    
+    console.log('✅ Applicable rules:', applicableRules);
+    
+    for (const rule of applicableRules) {
+      try {
+        // Parse the JSONLogic expression
+        const expression = JSON.parse(rule.jsonlogic_expression || rule.jsonlogicExpression);
+        console.log('🧮 Evaluating expression:', expression);
+        console.log('📊 Against data:', currentFormData);
+        
+        // Evaluate the condition
+        const result = jsonLogic.apply(expression, currentFormData);
+        console.log('✨ Evaluation result:', result);
+        
+        if (result) {
+          const targetPageId = rule.target_page_id || rule.targetPageId;
+          console.log('🎯 Condition matched! Navigating to:', targetPageId);
+          return targetPageId;
+        }
+      } catch (error) {
+        console.error('❌ Error evaluating conditional rule:', error, rule);
+      }
+    }
+    
+    console.log('🔄 No conditions matched, no navigation');
+    return null;
+  };
+
+  // Handle CTA button click with conditional logic
   const handleCTAClick = () => {
-    if (onNavigate) {
-      // For now, just show a message
+    // Collect current form data
+    const currentFormData = collectFormData();
+    console.log('🚀 CTA clicked with form data:', currentFormData);
+    
+    // Update form data state
+    setFormData(currentFormData);
+    
+    // Check for conditional navigation
+    const nextPageId = getNextPageId(currentFormData);
+    
+    if (nextPageId && onNavigate) {
+      console.log('🎯 Navigating to page:', nextPageId);
+      onNavigate(nextPageId);
+    } else {
+      // Show message that no navigation rules apply
       setShowNavigationMessage(true);
       setTimeout(() => setShowNavigationMessage(false), 3000);
-    } else {
-      // Fallback: show alert
-      alert('CTA clicked! In a real prototype, this would navigate to the next page.');
     }
   };
 
@@ -75,11 +165,13 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
 
   const renderFormField = (field: any, index: number) => {
     const fieldId = `field-${index}`;
+    const fieldName = field.name || field.fieldName || fieldId; // Use field name for form data collection
     
     // Debug logging
     if (field.type === 'radios') {
       console.log('Rendering radio field:', field);
       console.log('Field options:', field.options);
+      console.log('Field name for form data:', fieldName);
     }
     const govukStyles = {
       formGroup: {
@@ -183,7 +275,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
             <input
               style={govukStyles.input}
               id={fieldId}
-              name={fieldId}
+              name={fieldName}
               type={field.type}
               aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
               required={field.required}
@@ -205,7 +297,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
             <input
               style={{...govukStyles.input, maxWidth: '100px'}}
               id={fieldId}
-              name={fieldId}
+              name={fieldName}
               type="number"
               aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
               required={field.required}
@@ -227,7 +319,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
             <textarea
               style={govukStyles.textarea}
               id={fieldId}
-              name={fieldId}
+              name={fieldName}
               rows={5}
               aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
               required={field.required}
@@ -255,7 +347,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
                     <input
                       className="govuk-radios__input"
                       id={`${fieldId}-${optionIndex}`}
-                      name={fieldId}
+                      name={fieldName}
                       type="radio"
                       value={option.value}
                       aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
@@ -291,7 +383,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
                     <input
                       className="govuk-checkboxes__input"
                       id={`${fieldId}-${optionIndex}`}
-                      name={`${fieldId}[]`}
+                      name={`${fieldName}[]`}
                       type="checkbox"
                       value={option.value}
                       aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
@@ -321,7 +413,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
             <select
               style={govukStyles.select}
               id={fieldId}
-              name={fieldId}
+              name={fieldName}
               aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
               required={field.required}
             >
@@ -355,7 +447,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
                   <input 
                     style={{...govukStyles.input, maxWidth: '60px'}} 
                     id={`${fieldId}-day`} 
-                    name={`${fieldId}-day`} 
+                    name={`${fieldName}-day`} 
                     type="text" 
                     pattern="[0-9]*" 
                   />
@@ -367,7 +459,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
                   <input 
                     style={{...govukStyles.input, maxWidth: '60px'}} 
                     id={`${fieldId}-month`} 
-                    name={`${fieldId}-month`} 
+                    name={`${fieldName}-month`} 
                     type="text" 
                     pattern="[0-9]*" 
                   />
@@ -379,7 +471,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
                   <input 
                     style={{...govukStyles.input, maxWidth: '80px'}} 
                     id={`${fieldId}-year`} 
-                    name={`${fieldId}-year`} 
+                    name={`${fieldName}-year`} 
                     type="text" 
                     pattern="[0-9]*" 
                   />
@@ -403,7 +495,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
             <input
               style={govukStyles.input}
               id={fieldId}
-              name={fieldId}
+              name={fieldName}
               type="file"
               aria-describedby={field.hint ? `${fieldId}-hint` : undefined}
               required={field.required}
@@ -771,7 +863,7 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
                   )}
               
                   {fields.length > 0 ? (
-                    <form style={{ marginBottom: '30px' }}>
+                    <form ref={formRef} style={{ marginBottom: '30px' }}>
                       {fields.map((field: any, index: number) => (
                         <div key={index} style={{ marginBottom: '30px' }}>
                           {renderFormField(field, index)}
@@ -980,8 +1072,11 @@ export function PagePreview({ node, onClose, onNavigate }: PagePreviewProps) {
 
         {/* Navigation Message */}
         {showNavigationMessage && (
-          <div className="absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-20">
-            CTA clicked! In a real prototype, this would navigate to the next page.
+          <div className="absolute top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow-lg z-20">
+            {conditionalRules.length > 0 
+              ? 'No conditional logic matched your inputs. Add conditions or fill out the form to test navigation.'
+              : 'No conditional logic configured. Use the journey editor to add conditional routing.'
+            }
           </div>
         )}
       </div>

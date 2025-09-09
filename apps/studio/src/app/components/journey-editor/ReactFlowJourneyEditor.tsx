@@ -577,6 +577,7 @@ export default function ReactFlowJourneyEditor({
             node={currentEditingNode}
             onSave={handleSavePage}
             editingPageId={editingPageId}
+            projectId={projectId}
           />
         </div>
       ) : (

@@ -1,4 +1,4 @@
-import sqlite3 from 'sqlite3';
+import sqlite3, { Database } from 'sqlite3';
 import path from 'path';
 import { Project, Page, Field, ProjectSettings } from '../types/prototype';
 import { promisify } from 'util';
@@ -631,31 +631,32 @@ export class ConditionalRulesService {
     jsonlogicExpression: string;
   }): Promise<void> {
     return new Promise((resolve, reject) => {
-      const stmt = this.db.prepare(`
-        INSERT INTO conditional_rules (
+      this.db.run(
+        `INSERT INTO conditional_rules (
           id, project_id, source_page_id, target_page_id, field_name,
           condition_type, condition_value, condition_label, jsonlogic_expression
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      
-      stmt.run([
-        rule.id,
-        rule.projectId,
-        rule.sourcePageId,
-        rule.targetPageId,
-        rule.fieldName,
-        rule.conditionType,
-        rule.conditionValue,
-        rule.conditionLabel || null,
-        rule.jsonlogicExpression
-      ], (err) => {
-        if (err) {
-          console.error('Error creating conditional rule:', err);
-          reject(err);
-        } else {
-          resolve();
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          rule.id,
+          rule.projectId,
+          rule.sourcePageId,
+          rule.targetPageId,
+          rule.fieldName,
+          rule.conditionType,
+          rule.conditionValue,
+          rule.conditionLabel || null,
+          rule.jsonlogicExpression
+        ],
+        function(err) {
+          if (err) {
+            console.error('Error creating conditional rule:', err);
+            reject(err);
+          } else {
+            console.log('✅ Conditional rule created successfully with ID:', rule.id);
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -713,20 +714,20 @@ export class ConditionalRulesService {
       const values = Object.values(updates);
       values.push(ruleId);
 
-      const stmt = this.db.prepare(`
-        UPDATE conditional_rules 
-        SET ${fields}, updated_at = CURRENT_TIMESTAMP 
-        WHERE id = ?
-      `);
-      
-      stmt.run(values, (err) => {
-        if (err) {
-          console.error('Error updating conditional rule:', err);
-          reject(err);
-        } else {
-          resolve();
+      this.db.run(
+        `UPDATE conditional_rules 
+         SET ${fields}, updated_at = CURRENT_TIMESTAMP 
+         WHERE id = ?`,
+        values,
+        function(err) {
+          if (err) {
+            console.error('Error updating conditional rule:', err);
+            reject(err);
+          } else {
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -735,8 +736,7 @@ export class ConditionalRulesService {
    */
   async delete(ruleId: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      const stmt = this.db.prepare('DELETE FROM conditional_rules WHERE id = ?');
-      stmt.run([ruleId], (err) => {
+      this.db.run('DELETE FROM conditional_rules WHERE id = ?', [ruleId], function(err) {
         if (err) {
           console.error('Error deleting conditional rule:', err);
           reject(err);
@@ -752,8 +752,7 @@ export class ConditionalRulesService {
    */
   async deleteByProject(projectId: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      const stmt = this.db.prepare('DELETE FROM conditional_rules WHERE project_id = ?');
-      stmt.run([projectId], (err) => {
+      this.db.run('DELETE FROM conditional_rules WHERE project_id = ?', [projectId], function(err) {
         if (err) {
           console.error('Error deleting conditional rules for project:', err);
           reject(err);
