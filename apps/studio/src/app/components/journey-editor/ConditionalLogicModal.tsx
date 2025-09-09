@@ -11,6 +11,7 @@ interface ConditionalLogicModalProps {
   onSaveCondition: (condition: Condition) => void;
   existingConditions?: Condition[];
   onLoadPageFields?: (pageId: string) => void;
+  pageFields?: {[pageId: string]: any[]};
 }
 
 export function ConditionalLogicModal({
@@ -20,7 +21,8 @@ export function ConditionalLogicModal({
   selectedPageId,
   onSaveCondition,
   existingConditions = [],
-  onLoadPageFields
+  onLoadPageFields,
+  pageFields = {}
 }: ConditionalLogicModalProps) {
   const [selectedSourcePage, setSelectedSourcePage] = useState<string>('');
   const [selectedField, setSelectedField] = useState<string>('');
@@ -43,18 +45,60 @@ export function ConditionalLogicModal({
 
   // Get fields for the selected source page
   const sourcePage = pages.find(p => p.id === selectedSourcePage);
-  const availableFields = sourcePage?.fields || [];
+  const availableFields = sourcePage?.fields || pageFields[selectedSourcePage] || [];
+  
+  // Debug: Check both sources of fields
+  console.log('🔍 Field sources for page', selectedSourcePage, ':', {
+    fromPageData: sourcePage?.fields?.length || 0,
+    fromPageFields: pageFields[selectedSourcePage]?.length || 0,
+    finalAvailable: availableFields.length
+  });
   
   // Load fields when source page changes
   useEffect(() => {
     if (selectedSourcePage && onLoadPageFields) {
+      console.log('Loading fields for page:', selectedSourcePage);
       onLoadPageFields(selectedSourcePage);
     }
   }, [selectedSourcePage, onLoadPageFields]);
   
+  // Refresh fields when pageFields state updates
+  useEffect(() => {
+    console.log('PageFields state updated:', pageFields);
+  }, [pageFields]);
+  
+  // Also load fields when modal opens
+  useEffect(() => {
+    if (isOpen && selectedPageId && onLoadPageFields) {
+      console.log('Modal opened, loading fields for selected page:', selectedPageId);
+      onLoadPageFields(selectedPageId);
+    }
+  }, [isOpen, selectedPageId, onLoadPageFields]);
+  
   // Debug logging
+  console.log('=== CONDITIONAL LOGIC MODAL DEBUG ===');
   console.log('Source page:', sourcePage);
   console.log('Available fields:', availableFields);
+  console.log('All pages passed to modal:', pages);
+  console.log('Selected source page ID:', selectedSourcePage);
+  console.log('PageFields state:', pageFields);
+  
+  // Detailed field inspection
+  if (availableFields.length > 0) {
+    console.log('DETAILED FIELD INSPECTION:');
+    availableFields.forEach((field, index) => {
+      console.log(`Field ${index}:`, {
+        id: field.id,
+        name: field.name,
+        type: field.type,
+        label: field.label,
+        options: field.options,
+        hasOptions: !!field.options,
+        optionsLength: field.options?.length || 0
+      });
+    });
+  }
+  console.log('=====================================');
 
   // Get available target pages (excluding source page)
   const availableTargetPages = pages.filter(p => p.id !== selectedSourcePage);
@@ -160,12 +204,35 @@ export function ConditionalLogicModal({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select a field...</option>
-                {availableFields.map(field => (
-                  <option key={field.id} value={field.name}>
-                    {field.label} ({field.type})
-                  </option>
-                ))}
+                {availableFields.length === 0 ? (
+                  <option value="" disabled>No fields found for this page</option>
+                ) : (
+                  availableFields.map(field => (
+                    <option key={field.id} value={field.name}>
+                      {field.label} ({field.type})
+                    </option>
+                  ))
+                )}
               </select>
+              {availableFields.length === 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 mb-2">
+                    Make sure this page has form fields (like radio buttons) before setting up conditional logic.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedSourcePage && onLoadPageFields) {
+                        console.log('Manually refreshing fields for:', selectedSourcePage);
+                        onLoadPageFields(selectedSourcePage);
+                      }
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Refresh fields
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -194,13 +261,39 @@ export function ConditionalLogicModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Value to check against:
               </label>
-              <input
-                type="text"
-                value={conditionValue}
-                onChange={(e) => setConditionValue(e.target.value)}
-                placeholder="Enter the value to check..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+              {(() => {
+                const selectedFieldData = availableFields.find(f => f.name === selectedField);
+                
+                // If it's a radio button field, show options dropdown instead of text input
+                // This allows users to select from predefined radio options for branching logic
+                if (selectedFieldData?.type === 'radios' && selectedFieldData?.options) {
+                  return (
+                    <select
+                      value={conditionValue}
+                      onChange={(e) => setConditionValue(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select an option...</option>
+                      {selectedFieldData.options.map((option: any) => (
+                        <option key={option.value} value={option.value}>
+                          {option.text}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                }
+                
+                // For other field types, show text input
+                return (
+                  <input
+                    type="text"
+                    value={conditionValue}
+                    onChange={(e) => setConditionValue(e.target.value)}
+                    placeholder="Enter the value to check..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                );
+              })()}
             </div>
           )}
 
@@ -248,7 +341,15 @@ export function ConditionalLogicModal({
               <p className="text-sm text-gray-600">
                 <strong>If</strong> user is on <strong>{sourcePage?.title}</strong> and{' '}
                 <strong>{availableFields.find(f => f.name === selectedField)?.label}</strong>{' '}
-                <strong>{conditionType.replace('_', ' ')}</strong> <strong>"{conditionValue}"</strong>,{' '}
+                <strong>{conditionType.replace('_', ' ')}</strong>{' '}
+                <strong>"{(() => {
+                  const selectedFieldData = availableFields.find(f => f.name === selectedField);
+                  if (selectedFieldData?.type === 'radios' && selectedFieldData?.options) {
+                    const selectedOption = selectedFieldData.options.find((opt: any) => opt.value === conditionValue);
+                    return selectedOption ? selectedOption.text : conditionValue;
+                  }
+                  return conditionValue;
+                })()}"</strong>,{' '}
                 <strong>then</strong> go to <strong>{pages.find(p => p.id === selectedTargetPage)?.title}</strong>
               </p>
             </div>

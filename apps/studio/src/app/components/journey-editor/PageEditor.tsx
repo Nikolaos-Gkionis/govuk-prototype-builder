@@ -370,6 +370,12 @@ export function PageEditor({ node, onSave, editingPageId }: PageEditorProps) {
           serviceNavConfig: serviceNavConfig
         });
       } else {
+        console.log('📝 PageEditor saving page data:', {
+          title: formData.title,
+          fieldsCount: formData.fields?.length || 0,
+          fields: formData.fields
+        });
+        
         onSave({
           ...node?.data,
           label: formData.title,

@@ -314,6 +314,13 @@ export default function ReactFlowJourneyEditor({
 
   // Handle saving page data
   const handleSavePage = useCallback(async (pageData: any) => {
+    console.log('🎯 ReactFlowJourneyEditor.handleSavePage called with:', {
+      editingPageId,
+      hasFields: !!pageData.fields,
+      fieldsCount: pageData.fields?.length || 0,
+      fields: pageData.fields
+    });
+    
     // Update the node data with the new page content
     setNodes((nds: any) => 
       nds.map((node: any) => 
@@ -341,6 +348,15 @@ export default function ReactFlowJourneyEditor({
 
         // Then save new fields
         for (const field of pageData.fields) {
+          console.log(`💾 Saving field to database:`, {
+            fieldId: field.id,
+            fieldName: field.name,
+            fieldType: field.type,
+            fieldLabel: field.label,
+            hasOptions: !!field.options,
+            options: field.options
+          });
+          
           await fetch('/api/page-fields', {
             method: 'POST',
             headers: {
@@ -395,16 +411,31 @@ export default function ReactFlowJourneyEditor({
   // Load fields for a specific page
   const loadPageFields = useCallback(async (pageId: string) => {
     try {
+      console.log(`🔄 Loading fields for page: ${pageId}`);
       const response = await fetch(`/api/page-fields?pageId=${pageId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log(`✅ Loaded ${data.fields?.length || 0} fields for page ${pageId}:`, data.fields);
+        
+        // Detailed field inspection
+        if (data.fields && data.fields.length > 0) {
+          data.fields.forEach((field: any, index: number) => {
+            console.log(`   Field ${index}: ${field.label} (${field.type})`, {
+              hasOptions: !!field.options,
+              options: field.options
+            });
+          });
+        }
+        
         setPageFields(prev => ({
           ...prev,
           [pageId]: data.fields || []
         }));
+      } else {
+        console.error(`❌ Failed to load fields for page ${pageId}:`, response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error loading page fields:', error);
+      console.error('❌ Error loading page fields:', error);
     }
   }, []);
 
@@ -412,12 +443,12 @@ export default function ReactFlowJourneyEditor({
   const handleOpenConditionalLogic = useCallback(async () => {
     setShowConditionalLogicModal(true);
     // Load fields for all pages when opening the modal
+    console.log('Opening conditional logic modal, loading fields for all pages...');
     for (const node of nodes as any[]) {
-      if (!pageFields[node.id]) {
-        await loadPageFields(node.id);
-      }
+      console.log(`Loading fields for page ${node.id}:`, node.data.fields);
+      await loadPageFields(node.id);
     }
-  }, [nodes, pageFields, loadPageFields]);
+  }, [nodes, loadPageFields]);
 
   const handleCloseConditionalLogic = useCallback(() => {
     setShowConditionalLogicModal(false);
@@ -425,22 +456,36 @@ export default function ReactFlowJourneyEditor({
 
   const handleSaveCondition = useCallback(async (condition: any) => {
     try {
+      const requestData = {
+        id: condition.id,
+        projectId,
+        sourcePageId: condition.sourcePageId,
+        targetPageId: condition.toPageId,
+        fieldName: condition.fieldName,
+        conditionType: condition.conditionType,
+        conditionValue: condition.conditionValue,
+        conditionLabel: condition.conditionLabel,
+        jsonlogicExpression: JSON.stringify(condition.expression)
+      };
+      
+      console.log('🚀 Saving conditional rule:', requestData);
+      console.log('📋 Required fields check:', {
+        id: !!requestData.id,
+        projectId: !!requestData.projectId,
+        sourcePageId: !!requestData.sourcePageId,
+        targetPageId: !!requestData.targetPageId,
+        fieldName: !!requestData.fieldName,
+        conditionType: !!requestData.conditionType,
+        conditionValue: !!requestData.conditionValue,
+        jsonlogicExpression: !!requestData.jsonlogicExpression
+      });
+      
       const response = await fetch('/api/conditional-rules', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          id: condition.id,
-          projectId,
-          sourcePageId: condition.sourcePageId,
-          targetPageId: condition.toPageId,
-          fieldName: condition.fieldName,
-          conditionType: condition.conditionType,
-          conditionValue: condition.conditionValue,
-          conditionLabel: condition.conditionLabel,
-          jsonlogicExpression: JSON.stringify(condition.expression)
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (response.ok) {
@@ -450,9 +495,14 @@ export default function ReactFlowJourneyEditor({
           const data = await rulesResponse.json();
           setConditionalRules(data.rules);
         }
-        console.log('Conditional rule saved successfully');
+        console.log('✅ Conditional rule saved successfully');
       } else {
-        console.error('Failed to save conditional rule');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Failed to save conditional rule:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
       }
     } catch (error) {
       console.error('Error saving conditional rule:', error);
@@ -681,21 +731,34 @@ export default function ReactFlowJourneyEditor({
       <ConditionalLogicModal
         isOpen={showConditionalLogicModal}
         onClose={handleCloseConditionalLogic}
-        pages={nodes.map((node: any) => ({
-          id: node.id,
-          key: node.id,
-          title: node.data.label,
-          type: node.data.pageType,
-          path: `/${node.id}`,
-          fields: pageFields[node.id] || [],
-          next: [],
-          conditions: [],
-          metadata: {}
-        }))}
+        pages={nodes.map((node: any) => {
+          const nodeFields = node.data.fields || [];
+          const dbFields = pageFields[node.id] || [];
+          const allFields = nodeFields.length > 0 ? nodeFields : dbFields;
+          
+          console.log(`📊 Page ${node.id} field sources:`, {
+            nodeFields: nodeFields.length,
+            dbFields: dbFields.length,
+            using: allFields.length > 0 ? (nodeFields.length > 0 ? 'node' : 'db') : 'none'
+          });
+          
+          return {
+            id: node.id,
+            key: node.id,
+            title: node.data.label,
+            type: node.data.pageType,
+            path: `/${node.id}`,
+            fields: allFields,
+            next: [],
+            conditions: [],
+            metadata: {}
+          };
+        })}
         selectedPageId={selectedNode || undefined}
         onSaveCondition={handleSaveCondition}
         existingConditions={conditionalRules}
         onLoadPageFields={loadPageFields}
+        pageFields={pageFields}
       />
     </div>
   );
